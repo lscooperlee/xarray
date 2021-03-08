@@ -1,11 +1,11 @@
 BUILDDIR ?= ./build
 
 CHECK ?= cppcheck
-CHECKFLAGS = --enable=all --language=c++ -I src --suppress=missingIncludeSystem --suppressions-list=suppressions.txt --inconclusive -q --std=c++17
+CHECKFLAGS ?= --enable=all --language=c++ -I src --suppress=missingIncludeSystem --suppressions-list=suppressions.txt --inconclusive -q --std=c++17
 
-MKDIR ?= mkdir -p
-DIRNAME ?= dirname
-RM ?= rm -rf
+MKDIR = mkdir -p
+DIRNAME = dirname
+RM = rm -rf
 
 
 CPPFLAGS = -std=c++2a -O2 -Wall -Wextra -Wshadow
