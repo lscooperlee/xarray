@@ -1,11 +1,17 @@
 cmake_minimum_required(VERSION 3.15)
 
 # Set the project name to your project name, my project isn't very descriptive
-project(cpp_starter CXX)
+project(xarray CXX)
 
 add_subdirectory(tests)
 
-add_executable(main src/main.cpp)
+file(GLOB sources CONFIGURE_DEPENDS "src/*.cpp")
+add_executable(main ${sources})
 
 target_compile_features(main PUBLIC cxx_std_20)
 set_target_properties(main PROPERTIES CXX_EXTENSIONS OFF)
+
+find_package(OpenCV REQUIRED core imgcodecs imgproc calib3d)
+target_include_directories(main PUBLIC ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(main ${OpenCV_LIBS})
+
