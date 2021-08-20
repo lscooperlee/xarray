@@ -4,6 +4,8 @@
 #include "index.h"
 #include "xarray.h"
 
+using namespace xa;
+
 TEST_CASE("index")
 {
     constexpr auto a = Index1D({ 1, 2, 3, 4 });

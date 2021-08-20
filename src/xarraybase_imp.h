@@ -17,10 +17,15 @@
 #include "data_storage.h"
 #include "shape.h"
 
-template <typename S>
+namespace xa
+{
+
+template <typename A, int N, typename I>
+class XarrayBase;
+
+template <typename I, int M>
 class CVXarrayBaseImp : public cv::Mat {
-    using Type_t = typename S::base_class;
-    using I = typename Type_t::value_type;
+    using Type_t = XarrayBase<I, M, CVXarrayBaseImp<I, M>>;
 
 private:
     static constexpr int get_type()
@@ -56,7 +61,7 @@ public:
         cv::Mat m(rows, cols, get_type());
         cv::randu(m, cv::Scalar(0), cv::Scalar(1));
 
-        Type_t ret { CVXarrayBaseImp<S>(m) };
+        Type_t ret { CVXarrayBaseImp<I, N>(m) };
         ret.shape = shape;
 
         return ret;
@@ -77,7 +82,7 @@ public:
         cv::Mat m(rows, cols, get_type());
         cv::randn(m, cv::Scalar(0), cv::Scalar(1));
 
-        Type_t ret { CVXarrayBaseImp<S>(m) };
+        Type_t ret { CVXarrayBaseImp<I, N>(m) };
         ret.shape = shape;
 
         return ret;
@@ -151,8 +156,8 @@ public:
     template <typename U>
     bool isclose(const U& op1) const
     {
-        auto tmp = static_cast<const cv::Mat&>(*this) - CVXarrayBaseImp<S>(op1);
-        return CVXarrayBaseImp<S>(tmp < 0.00001).all();
+        auto tmp = static_cast<const cv::Mat&>(*this) - CVXarrayBaseImp<I, M>(op1);
+        return CVXarrayBaseImp<I, M>(tmp < 0.00001).all();
     }
 
     I det() const
@@ -162,7 +167,7 @@ public:
 
     Type_t inv() const
     {
-        Type_t ret(CVXarrayBaseImp<S>(static_cast<const cv::Mat*>(this)->inv(cv::DECOMP_SVD)));
+        Type_t ret(CVXarrayBaseImp<I, M>(static_cast<const cv::Mat*>(this)->inv(cv::DECOMP_SVD)));
         ret.shape = shape;
         return ret;
     }
@@ -170,10 +175,10 @@ public:
     Type_t T() const
     {
         if (shape.size() == 1) {
-            Type_t ret(CVXarrayBaseImp<S>(*this));
+            Type_t ret(CVXarrayBaseImp<I, M>(*this));
             return ret;
         } else {
-            Type_t ret(CVXarrayBaseImp<S>(static_cast<const cv::Mat*>(this)->t()));
+            Type_t ret(CVXarrayBaseImp<I, M>(static_cast<const cv::Mat*>(this)->t()));
             ret.shape[0] = shape[1];
             ret.shape[1] = shape[0];
             return ret;
@@ -191,7 +196,7 @@ public:
 
         if (is_vector_2d || is_vector_1d) {
 
-            I ret = static_cast<const cv::Mat*>(this)->dot(CVXarrayBaseImp<S>(op2));
+            I ret = static_cast<const cv::Mat*>(this)->dot(CVXarrayBaseImp<I, M>(op2));
             return ret;
         } else {
             throw std::runtime_error("shape error in dot");
@@ -209,11 +214,11 @@ public:
             cv::Mat _;
 
             auto m1 = static_cast<const cv::Mat&>(*this);
-            auto m2 = static_cast<const cv::Mat&>(CVXarrayBaseImp<S>(op2));
+            auto m2 = static_cast<const cv::Mat&>(CVXarrayBaseImp<I, M>(op2));
 
             cv::vconcat(m1, m2, _);
 
-            Type_t ret { CVXarrayBaseImp<S>(_) };
+            Type_t ret { CVXarrayBaseImp<I, M>(_) };
             ret.shape = Shape(shape[0] + op2.shape[0], shape[1]);
             return ret;
 
@@ -233,11 +238,11 @@ public:
             cv::Mat _;
 
             auto m1 = static_cast<const cv::Mat&>(*this);
-            auto m2 = static_cast<const cv::Mat&>(CVXarrayBaseImp<S>(op2));
+            auto m2 = static_cast<const cv::Mat&>(CVXarrayBaseImp<I, M>(op2));
 
             cv::hconcat(m1, m2, _);
 
-            Type_t ret { CVXarrayBaseImp<S>(_) };
+            Type_t ret { CVXarrayBaseImp<I, M>(_) };
             ret.shape = Shape(shape[0], op2.shape[1] + shape[1]);
             return ret;
 
@@ -278,19 +283,19 @@ public:
     requires arithmetic<U> || std::derived_from<U, Type_t> Type_t operator*(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
-            Type_t ret(CVXarrayBaseImp<S>(static_cast<const cv::Mat&>(*this) * op2));
+            Type_t ret(CVXarrayBaseImp<I, M>(static_cast<const cv::Mat&>(*this) * op2));
             ret.shape = shape;
             return ret;
         } else if constexpr (std::derived_from<U, Type_t>) {
             if ((shape.size() == 2)
                 && (op2.shape.size() == 2)
                 && (shape[1] == op2.shape[0])) {
-                Type_t ret(CVXarrayBaseImp<S>(static_cast<const cv::Mat&>(*this) * CVXarrayBaseImp<S>(op2)));
+                Type_t ret(CVXarrayBaseImp<I, M>(static_cast<const cv::Mat&>(*this) * CVXarrayBaseImp<I, M>(op2)));
                 ret.shape = Shape(shape[0], op2.shape[1]);
                 return ret;
             } else if (shape == op2.shape) {
 
-                Type_t ret(CVXarrayBaseImp<S>(this->mul(CVXarrayBaseImp<S>(op2))));
+                Type_t ret(CVXarrayBaseImp<I, M>(this->mul(CVXarrayBaseImp<I, M>(op2))));
                 ret.shape = shape;
                 return ret;
             } else {
@@ -303,12 +308,12 @@ public:
     requires arithmetic<U> || std::derived_from<U, Type_t> Type_t operator/(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
-            Type_t ret(CVXarrayBaseImp<S>(static_cast<const cv::Mat&>(*this) / op2));
+            Type_t ret(CVXarrayBaseImp<I, M>(static_cast<const cv::Mat&>(*this) / op2));
             ret.shape = shape;
             return ret;
         } else if constexpr (std::derived_from<U, Type_t>) {
             if (shape == op2.shape) {
-                Type_t ret(CVXarrayBaseImp<S>(static_cast<const cv::Mat&>(*this) - CVXarrayBaseImp<S>(op2)));
+                Type_t ret(CVXarrayBaseImp<I, M>(static_cast<const cv::Mat&>(*this) - CVXarrayBaseImp<I, M>(op2)));
                 ret.shape = shape;
                 return ret;
             } else {
@@ -323,12 +328,12 @@ public:
     requires arithmetic<U> || XBaseType<U> Type_t operator+(const U& op2) const
     {
         if constexpr (arithmetic<U>) {
-            Type_t ret(CVXarrayBaseImp<S>(static_cast<const cv::Mat&>(*this) + op2));
+            Type_t ret(CVXarrayBaseImp<I, M>(static_cast<const cv::Mat&>(*this) + op2));
             ret.shape = shape;
             return ret;
         } else if constexpr (XBaseType<U>) {
             if (shape == op2.shape) {
-                Type_t ret(CVXarrayBaseImp<S>(static_cast<const cv::Mat&>(*this) + CVXarrayBaseImp<S>(op2)));
+                Type_t ret(CVXarrayBaseImp<I, M>(static_cast<const cv::Mat&>(*this) + CVXarrayBaseImp<I, M>(op2)));
                 ret.shape = shape;
                 return ret;
             } else {
@@ -343,12 +348,12 @@ public:
     operator-(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
-            Type_t ret(CVXarrayBaseImp<S>(static_cast<const cv::Mat&>(*this) - op2));
+            Type_t ret(CVXarrayBaseImp<I, M>(static_cast<const cv::Mat&>(*this) - op2));
             ret.shape = shape;
             return ret;
         } else if constexpr (std::derived_from<U, Type_t>) {
             if (shape == op2.shape) {
-                Type_t ret(CVXarrayBaseImp<S>(static_cast<const cv::Mat&>(*this) - CVXarrayBaseImp<S>(op2)));
+                Type_t ret(CVXarrayBaseImp<I, M>(static_cast<const cv::Mat&>(*this) - CVXarrayBaseImp<I, M>(op2)));
                 ret.shape = shape;
                 return ret;
             } else {
@@ -365,7 +370,7 @@ public:
             static_cast<cv::Mat&>(*this) += op2;
         } else if constexpr (std::derived_from<U, Type_t>) {
             if (shape == op2.shape) {
-                static_cast<cv::Mat&>(*this) += CVXarrayBaseImp<S>(op2);
+                static_cast<cv::Mat&>(*this) += CVXarrayBaseImp<I, M>(op2);
             } else {
                 throw std::runtime_error("shape error in imp +=");
             }
@@ -380,7 +385,7 @@ public:
             static_cast<cv::Mat&>(*this) -= op2;
         } else if constexpr (std::derived_from<U, Type_t>) {
             if (shape == op2.shape) {
-                static_cast<cv::Mat&>(*this) -= CVXarrayBaseImp<S>(op2);
+                static_cast<cv::Mat&>(*this) -= CVXarrayBaseImp<I, M>(op2);
             } else {
                 throw std::runtime_error("shape error in imp -=");
             }
@@ -398,7 +403,7 @@ public:
         const auto& self = static_cast<const cv::Mat&>(*this);
         cv::exp(self, _);
 
-        Type_t ret { CVXarrayBaseImp<S>(_) };
+        Type_t ret { CVXarrayBaseImp<I, M>(_) };
         ret.shape = shape;
 
         return ret;
@@ -411,7 +416,7 @@ public:
         const auto& self = static_cast<const cv::Mat&>(*this);
         cv::pow(self, power, _);
 
-        Type_t ret { CVXarrayBaseImp<S>(_) };
+        Type_t ret { CVXarrayBaseImp<I, M>(_) };
         ret.shape = shape;
 
         return ret;
@@ -423,7 +428,7 @@ public:
         const auto& self = static_cast<const cv::Mat&>(*this);
         cv::sqrt(self, _);
 
-        Type_t ret { CVXarrayBaseImp<S>(_) };
+        Type_t ret { CVXarrayBaseImp<I, M>(_) };
         ret.shape = shape;
 
         return ret;
@@ -436,18 +441,19 @@ public:
     {
         cv::Mat _;
         const auto& m1 = static_cast<const cv::Mat&>(*this);
-        const auto& m2 = static_cast<const cv::Mat&>(CVXarrayBaseImp<S>(op2));
+        const auto& m2 = static_cast<const cv::Mat&>(CVXarrayBaseImp<I, M>(op2));
 
         cv::solve(m1, m2, _, cv::DECOMP_SVD);
 
-        Type_t ret { CVXarrayBaseImp<S>(_) };
+        Type_t ret { CVXarrayBaseImp<I, M>(_) };
         ret.shape = Shape(shape[1], 1);
 
         return ret;
     }
 
 private:
-    Shape<Type_t::shape_size> shape = {};
+    Shape<M> shape = {};
 };
 
+}
 #endif

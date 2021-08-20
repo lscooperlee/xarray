@@ -12,6 +12,8 @@
 #include <utility>
 #include <vector>
 
+namespace xa {
+
 template <typename T, int... N>
 class DataStorage {
 public:
@@ -217,5 +219,7 @@ private:
         }
     }
 };
+
+}
 
 #endif

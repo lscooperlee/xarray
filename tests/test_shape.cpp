@@ -6,6 +6,8 @@
 #include <catch2/catch.hpp>
 #include <vector>
 
+using namespace xa;
+
 TEST_CASE("shape", "[shape]")
 {
     Shape s1(5, 2, 1);

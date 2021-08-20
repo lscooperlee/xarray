@@ -3,10 +3,14 @@
 
 #include "xarraybase.h"
 
+namespace xa
+{
+
+
 template <typename A, int N>
-class Xarray: public XarrayBase<Xarray<A, N>, A, N> {
+class Xarray: public XarrayBase<A, N> {
 public:
-    using XarrayBase<Xarray<A, N>, A, N>::XarrayBase;
+    using XarrayBase<A, N>::XarrayBase;
 
     Xarray(const std::initializer_list<std::initializer_list<A>>& data_)
     {
@@ -19,22 +23,22 @@ public:
         }
     }
 
-    Xarray(const std::initializer_list<A>& data_):XarrayBase<Xarray<A, N>, A, N>(Shape(data_.size()), data_)
+    Xarray(const std::initializer_list<A>& data_):XarrayBase<A, N>(Shape(data_.size()), data_)
     {
     }
 
-    template <int... M>
-    auto operator[](const Index<M...>& idx) const
-    {
-        auto new_shape = this->data_storage.get_shape(idx, this->shape);
-        auto new_data = this->data_storage.copy(idx, this->shape);
-        if constexpr (new_shape.size() == 0) {
-            assert (new_data.size() == 1);
-            return new_data[0];
-        } else {
-            return Xarray<A, new_shape.size()>(new_shape, std::move(new_data));
-        }
-    }
+    // template <int... M>
+    // auto operator[](const Index<M...>& idx) const
+    // {
+    //     auto new_shape = this->data_storage.get_shape(idx, this->shape);
+    //     auto new_data = this->data_storage.copy(idx, this->shape);
+    //     if constexpr (new_shape.size() == 0) {
+    //         assert (new_data.size() == 1);
+    //         return new_data[0];
+    //     } else {
+    //         return Xarray<A, new_shape.size()>(new_shape, std::move(new_data));
+    //     }
+    // }
 };
 
 template <typename A>
@@ -42,5 +46,7 @@ Xarray(const std::initializer_list<std::initializer_list<A>>& data_) -> Xarray<A
 
 template <typename A>
 Xarray(const std::initializer_list<A>& data_) -> Xarray<A, 1>;
+
+}
 
 #endif

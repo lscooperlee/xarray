@@ -8,6 +8,9 @@
 #include <type_traits>
 #include <limits>
 
+namespace xa
+{
+
 
 template <int N>
 class Index1D {
@@ -91,5 +94,7 @@ public:
 class Idx {
 public:
 };
+
+}
 
 #endif

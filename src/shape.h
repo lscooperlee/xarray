@@ -16,6 +16,8 @@
 
 #include "common.h"
 
+namespace xa {
+
 template <int N>
 class Shape {
 public:
@@ -90,5 +92,7 @@ std::ostream& operator<<(std::ostream& stream, const Shape<N>& s)
 Shape(int d1)->Shape<1>;
 Shape(int d1, int d2)->Shape<2>;
 Shape(int d1, int d2, int d3)->Shape<3>;
+
+}
 
 #endif
