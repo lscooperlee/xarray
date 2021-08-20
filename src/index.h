@@ -4,13 +4,11 @@
 #include <array>
 #include <concepts>
 #include <initializer_list>
+#include <limits>
 #include <tuple>
 #include <type_traits>
-#include <limits>
 
-namespace xa
-{
-
+namespace xa {
 
 template <int N>
 class Index1D {
@@ -32,9 +30,9 @@ public:
 
     constexpr int stop() const noexcept
     {
-        if constexpr (N > 1){
+        if constexpr (N > 1) {
             return get<1>();
-        }else{
+        } else {
             // return std::numeric_limits<int>::max();
             return start() + 1;
         }
@@ -42,9 +40,9 @@ public:
 
     constexpr int step() const noexcept
     {
-        if constexpr (N > 2){
+        if constexpr (N > 2) {
             return get<2>();
-        }else{
+        } else {
             return 1;
         }
     }
@@ -55,7 +53,7 @@ private:
 
 template <int... N>
 class Index {
-    
+
 public:
     constexpr Index(const int (&... n)[N]) noexcept
         : data(n...) {};
