@@ -45,7 +45,6 @@ private:
         } else if constexpr (std::is_same_v<I, char>) {
             type = CV_8S;
         } else {
-            //            static_assert(false);
             std::cout << "float double bool when create XarrayImp";
         }
 
@@ -248,10 +247,10 @@ public:
 
     template <typename U>
     requires arithmetic<U> || std::derived_from<U, Type_t>
-    bool operator<(const U& op2) const
+    bool operator<(const U&) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
-            const auto& self = static_cast<const cv::Mat&>(*this);
+            // const auto& self = static_cast<const cv::Mat&>(*this);
             // Type_t ret(This_t(static_cast<const cv::Mat&>(*this) * op2));
             // ret.shape = shape;
             // return ret;

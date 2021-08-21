@@ -95,6 +95,15 @@ Shape(int d1)->Shape<1>;
 Shape(int d1, int d2)->Shape<2>;
 Shape(int d1, int d2, int d3)->Shape<3>;
 
+template <>
+class Shape<0> {
+public:
+    constexpr int size() const
+    {
+        return 0;
+    }
+};
+
 }
 
 #endif

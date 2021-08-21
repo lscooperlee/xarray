@@ -19,4 +19,5 @@ TEST_CASE("shape", "[shape]")
     REQUIRE(s3.size() == 1);
 
     Shape ss1({ 5, 2, 1 });
+    REQUIRE(ss1.size() == 3);
 }

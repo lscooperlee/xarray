@@ -74,10 +74,10 @@ public:
     using XBase<A, N>::shape;
     using XBase<A, N>::data_storage;
 
-    XarrayBase(XBase<A, N> base)
-        : XBase<A, N>(base)
-    {
-    }
+    // XarrayBase(XBase<A, N> base)
+    //     : XBase<A, N>(base)
+    // {
+    // }
 
     This_t copy() const
     {
