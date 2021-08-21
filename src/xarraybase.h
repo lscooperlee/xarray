@@ -5,8 +5,6 @@
 #include <initializer_list>
 #include <iostream>
 #include <memory>
-#include <ranges>
-#include <span>
 #include <tuple>
 #include <type_traits>
 #include <vector>
@@ -28,12 +26,6 @@ class XBase {
 public:
     constexpr XBase() = default;
 
-    // explicit XBase(const Shape<N>& shape_)
-    //     : shape(shape_)
-    //     , data_storage()
-    // {
-    // }
-
     XBase(const Shape<N>& shape_, const A* start, unsigned int len)
         : shape(shape_)
         , data_storage(start, len)
@@ -53,6 +45,16 @@ public:
     {
     }
 
+    const A* raw() const
+    {
+        return this->data_storage.data();
+    }
+
+    A* raw()
+    {
+        return this->data_storage.data();
+    }
+
     Shape<N> shape = {};
 
 protected:
@@ -60,7 +62,9 @@ protected:
 };
 
 template <typename A, int N, typename I = XarrayBaseImp<A, N>>
-class XarrayBase : XBase<A, N> {
+class XarrayBase : public XBase<A, N> {
+    using This_t = XarrayBase<A, N, I>;
+
 public:
     using value_type = A;
     using imp_type = I;
@@ -70,9 +74,14 @@ public:
     using XBase<A, N>::shape;
     using XBase<A, N>::data_storage;
 
-    XarrayBase<A, N, I> copy() const
+    XarrayBase(XBase<A, N> base)
+        : XBase<A, N>(base)
     {
-        return XarrayBase(shape, data_storage.data(), data_storage.size());
+    }
+
+    This_t copy() const
+    {
+        return This_t(shape, data_storage.data(), data_storage.size());
     }
 
     template <int... M>
@@ -93,29 +102,14 @@ public:
         return this->data_storage[idx];
     }
 
-    const A* raw() const
-    {
-        return this->data_storage.data();
-    }
-
-    A* raw()
-    {
-        return this->data_storage.data();
-    }
-
-    XarrayBase<A, N, I> inv() const
+    This_t inv() const
     {
         return I(*this).inv();
     }
 
-    XarrayBase<A, N, I> T() const
+    This_t T() const
     {
         return I(*this).T();
-    }
-
-    XarrayBase<A, N, I> t() const
-    {
-        return T();
     }
 
     template <typename U>
@@ -126,35 +120,35 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U> XarrayBase<A, N, I>
+    requires arithmetic<U> || XBaseType<U> This_t
     operator*(const U& op2) const
     {
         return I(*this) * op2;
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U> XarrayBase<A, N, I>
+    requires arithmetic<U> || XBaseType<U> This_t
     operator/(const U& op2) const
     {
         return I(*this) / op2;
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U> XarrayBase<A, N, I>
+    requires arithmetic<U> || XBaseType<U> This_t 
     operator-(const U& op2) const
     {
         return I(*this) - op2;
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U> XarrayBase<A, N, I>
+    requires arithmetic<U> || XBaseType<U> This_t 
     operator+(const U& op2) const
     {
         return I(*this) + op2;
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U> XarrayBase<A, N, I>
+    requires arithmetic<U> || XBaseType<U> This_t
     &operator+=(const U& op2)
     {
         I(*this) += op2;
@@ -162,7 +156,7 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U> XarrayBase<A, N, I>
+    requires arithmetic<U> || XBaseType<U> This_t
     &operator-=(const U& op2)
     {
         I(*this) -= op2;

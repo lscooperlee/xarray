@@ -4,6 +4,7 @@
 
 #include <catch2/catch.hpp>
 #include <vector>
+#include <initializer_list>
 
 using namespace xa;
 
@@ -14,7 +15,6 @@ TEST_CASE("xarray", "[xarray]")
     REQUIRE(x1.shape[0] == 2);
     REQUIRE(x1.shape.size() == 1);
     REQUIRE(isclose(x1, x2));
-    Xarray(std::initializer_list({ 1.0, 2.0 }));
 
     auto x3 = x1 * 2;
     REQUIRE(isclose(x3, Xarray({ 2.2, 4.0 })));

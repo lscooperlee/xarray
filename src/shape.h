@@ -6,7 +6,6 @@
 #include <iostream>
 #include <memory>
 #include <numeric>
-#include <ranges>
 #include <span>
 #include <tuple>
 #include <type_traits>
@@ -80,8 +79,11 @@ std::ostream& operator<<(std::ostream& stream, const Shape<N>& s)
 {
     stream << "(" << s[0];
 
-    for (auto&& d : s.dim | std::views::drop(1)) {
-        stream << ", " << d;
+    // for (auto&& d : s.dim | std::views::drop(1)) {
+    //     stream << ", " << d;
+    // } // clang report error
+    for (int i = 1; i < N; ++i) {
+        stream << ", " << s[i];
     }
 
     stream << ")";

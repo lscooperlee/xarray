@@ -68,7 +68,7 @@ public:
     constexpr int stop() const noexcept requires(K < sizeof...(N))
     {
         const auto& o = std::get<K>(data);
-        if constexpr (o.template size > 1) {
+        if constexpr (std::remove_cvref_t<decltype(o)>::size > 1) {
             return o.template get<1>();
         } else {
             return -1;
@@ -79,7 +79,7 @@ public:
     constexpr int step() const noexcept requires(K < sizeof...(N))
     {
         const auto& o = std::get<K>(data);
-        if constexpr (o.template size > 2) {
+        if constexpr (std::remove_cvref_t<decltype(o)>::size > 2) {
             return o.template get<2>();
         } else {
             return 1;
