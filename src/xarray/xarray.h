@@ -1,7 +1,7 @@
 #ifndef XARRAY_H
 #define XARRAY_H
 
-#include "xarraybase.h"
+#include "xarray/xarraybase.h"
 
 namespace xa
 {

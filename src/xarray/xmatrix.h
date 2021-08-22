@@ -1,7 +1,7 @@
 #ifndef XMATRIX_H
 #define XMATRIX_H
 
-#include "xarraybase.h"
+#include "xarray/xarraybase.h"
 
 namespace xa {
 

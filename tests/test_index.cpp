@@ -1,8 +1,8 @@
 
 #include <catch2/catch.hpp>
 
-#include "index.h"
-#include "xarray.h"
+#include "xarray/index.h"
+#include "xarray/xarray.h"
 
 using namespace xa;
 

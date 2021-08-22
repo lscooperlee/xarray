@@ -1,5 +1,5 @@
-#ifndef COMMON_H
-#define COMMON_H
+#ifndef XARRAY_COMMON_H
+#define XARRAY_COMMON_H
 
 #include <type_traits>
 

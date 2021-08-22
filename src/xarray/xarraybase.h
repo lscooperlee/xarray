@@ -11,11 +11,11 @@
 
 #include <opencv2/core.hpp>
 
-#include "common.h"
-#include "data_storage.h"
-#include "index.h"
-#include "shape.h"
-#include "xarraybase_imp.h"
+#include "xarray/common.h"
+#include "xarray/data_storage.h"
+#include "xarray/index.h"
+#include "xarray/shape.h"
+#include "xarray/xarraybase_imp.h"
 
 namespace xa {
 template <typename A, int N>
@@ -231,16 +231,16 @@ bool isclose(const XarrayBase<A, N, I>& op1, const XarrayBase<A, N, I>& op2)
     return I(op1).isclose(op2);
 }
 
-template <typename A, int N, typename I>
-XarrayBase<A, N, I> Xrand(Shape<N> shape)
+template <typename T, int N>
+T Xrand(Shape<N> shape)
 {
-    return I::rand(shape);
+    return T::imp_type::rand(shape);
 }
 
-template <typename A, int N, typename I>
-XarrayBase<A, N, I> Xrandn(Shape<N> shape)
+template <typename T, int N>
+T Xrandn(Shape<N> shape)
 {
-    return I::randn(shape);
+    return T::imp_type::randn(shape);
 }
 
 template <typename A, int N, typename I, typename C, typename P>

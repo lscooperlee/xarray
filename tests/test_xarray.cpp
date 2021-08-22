@@ -1,5 +1,5 @@
-#include "shape.h"
-#include "xarray.h"
+#include "xarray/shape.h"
+#include "xarray/xarray.h"
 #include <iostream>
 
 #include <catch2/catch.hpp>

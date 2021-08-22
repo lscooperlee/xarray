@@ -13,7 +13,7 @@
 
 #include <opencv2/core.hpp>
 
-#include "common.h"
+#include "xarray/common.h"
 
 namespace xa {
 

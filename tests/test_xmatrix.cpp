@@ -1,6 +1,6 @@
 
-#include "shape.h"
-#include "xmatrix.h"
+#include "xarray/shape.h"
+#include "xarray/xmatrix.h"
 
 #include <iostream>
 #include <type_traits>
@@ -75,7 +75,10 @@ TEST_CASE("xmatrix", "[xtest]")
     Xmatrix im2 = { { 1.0, 2.0, 3.0 }, { 3.0, 2.0, 1.0 } };
     REQUIRE(isclose(im2[Index({ 0 }, { 2 })], Xmatrix({ { 3.0 } })));
     REQUIRE(isclose(im2[Index({ 1 }, { 0, 3, 2 })], Xmatrix({ { 3.0, 1.0 } })));
-    REQUIRE(isclose(im2[Index({ 0, 2 }, { 2 })], Xmatrix({{3.0}, {1.0}})));
+    REQUIRE(isclose(im2[Index({ 0, 2 }, { 2 })], Xmatrix({ { 3.0 }, { 1.0 } })));
+
+    auto xr = Xrand<Xmatrix<double>>(Shape(2, 10));
+    auto xrn = Xrandn<Xmatrix<double>>(Shape(2, 10));
 }
 
 TEST_CASE("xtestmix")

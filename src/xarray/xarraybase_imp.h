@@ -12,9 +12,9 @@
 
 #include <opencv2/core.hpp>
 
-#include "common.h"
-#include "data_storage.h"
-#include "shape.h"
+#include "xarray/common.h"
+#include "xarray/data_storage.h"
+#include "xarray/shape.h"
 
 namespace xa {
 
@@ -447,6 +447,10 @@ public:
 
 private:
     Shape<M> shape = {};
+};
+
+template <typename I>
+class CVXarrayBaseImp<I, 0> {
 };
 
 }

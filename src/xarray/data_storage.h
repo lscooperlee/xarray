@@ -1,8 +1,8 @@
 #ifndef DATA_STORAGE_H
 #define DATA_STORAGE_H
 
-#include "index.h"
-#include "shape.h"
+#include "xarray/index.h"
+#include "xarray/shape.h"
 
 #include <algorithm>
 #include <iostream>
