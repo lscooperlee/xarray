@@ -3,12 +3,12 @@
 #include <iostream>
 
 #include <catch2/catch.hpp>
-#include <vector>
 #include <initializer_list>
+#include <vector>
 
 using namespace xa;
 
-TEST_CASE("xarray", "[xarray]")
+TEST_CASE("xarray")
 {
     auto x1 = Xarray({ 1.0, 2.0 });
     auto x2 = Xarray({ 1.0, 2.0 });
@@ -18,18 +18,24 @@ TEST_CASE("xarray", "[xarray]")
 
     auto x3 = x1 * 2;
     REQUIRE(isclose(x3, Xarray({ 2.2, 4.0 })));
-    // auto x3 = 2 * x1;
-    // REQUIRE(all(x2 == x3));
-    // auto x4 = x1 * x1;
+    REQUIRE(isclose(2 * x1, x3));
 
-    // auto x32 = Xarray({ { 0.1, 0.2 }, { 0.3, 0.4 }, { 0.5, 0.6 } });
-    // auto x22 = Xarray({ { 3.1, 0.2 }, { 1.3, 3.4 } });
-    // auto newx32 = x32 * x22;
-    // REQUIRE(isclose(newx32, Xarray({ { 0.57, 0.7 }, { 1.45, 1.42 }, { 2.33, 2.14 } })));
+    auto x4 = x1 * x1;
 
-    // REQUIRE(isclose(x22.inv(), Xarray({ { 0.330739, -0.0194553 }, { -0.126459, 0.301556 } })));
+    REQUIRE(x1.dot(x2) == 5);
+    REQUIRE(x2.dot(x1) == 5);
+    auto x32 = Xarray({ { 0.1, 0.2 }, { 0.3, 0.4 }, { 0.5, 0.6 } });
+    auto x22 = Xarray({ { 3.1, 0.2 }, { 1.3, 3.4 } });
+    REQUIRE(isclose(x32.dot(x22), Xarray({ { 0.57, 0.7 }, { 1.45, 1.42 }, { 2.33, 2.14 } })));
 
-    // REQUIRE(x1.dot(x2) == 10.42);
+    auto x31 = Xarray({ 1.0, 0.0, 1.0 });
+    auto x21 = Xarray({ -1.0, 1.0 });
+    REQUIRE(isclose(x32.matmul(x21), Xarray({0.1, 0.1, 0.1})));
+    REQUIRE(isclose(x31.matmul(x32), Xarray({0.6, 0.8})));
+    REQUIRE(isclose(x32.matmul(x22), Xarray({ { 0.57, 0.7 }, { 1.45, 1.42 }, { 2.33, 2.14 } })));
+
+    REQUIRE(isclose(x22.inv(), Xarray({ { 0.330739, -0.0194553 }, { -0.126459, 0.301556 } })));
+
     // REQUIRE(all(x32.T() == Xarray({ { 0.1, 0.3, 0.5 }, { 0.2, 0.4, 0.6 } })));
 
     // REQUIRE(all((x1 + x2 - x3) == Xarray({ 1.1, 2.0 })));

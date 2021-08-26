@@ -128,9 +128,7 @@ public:
     CVXarrayBaseImp(const Type_t& x)
     {
         auto [rows, cols] = get_rc(x.shape);
-
         *this = cv::Mat(rows, cols, get_type(), const_cast<void*>(reinterpret_cast<const void*>((x.raw()))));
-
         shape = x.shape; //shape changed by *this = ...
     }
 
@@ -180,20 +178,61 @@ public:
     }
 
     template <typename U>
-    requires std::derived_from<U, Type_t> I dot(const U& op2)
-    const
+    auto matmul(const U& op2) const
     {
-        auto is_vector_2d = (shape.size() == 2) && (op2.shape.size() == 2)
-            && (shape == op2.shape) && (shape[0] == 1 || shape[1] == 1);
-
-        auto is_vector_1d = (shape.size() == 1) && (op2.shape.size() == 1) && (shape == op2.shape);
-
-        if (is_vector_2d || is_vector_1d) {
-
-            I ret = static_cast<const cv::Mat*>(this)->dot(This_t(op2));
+        if constexpr (M == U::shape_size && M == 2) {
+            if (shape[1] == op2.shape[0]) {
+                Type_t ret(This_t(static_cast<const cv::Mat&>(*this) * This_t(op2)));
+                ret.shape = Shape(shape[0], op2.shape[1]);
+                return ret;
+            } else {
+                throw std::runtime_error("shape error in imp matmul");
+            }
+        } else if constexpr (U::shape_size == 1 && M == 2) {
+            auto new_op2 = static_cast<const cv::Mat&>(CVXarrayBaseImp<I, 1>(op2)).reshape(1, op2.shape[0]);
+            auto m = CVXarrayBaseImp<I, 1>(static_cast<const cv::Mat&>(*this) * new_op2);
+            XarrayBase<I, 1, CVXarrayBaseImp<I, 1>> ret(m);
+            ret.shape = Shape(shape[0]);
+            return ret;
+        } else if constexpr (U::shape_size == 2 && M == 1) {
+            auto new_this = static_cast<const cv::Mat&>(*this).reshape(1, 1);
+            Type_t ret(CVXarrayBaseImp<I, 1>(new_this * CVXarrayBaseImp<I, 2>(op2)));
+            ret.shape = Shape(op2.shape[1]);
             return ret;
         } else {
-            throw std::runtime_error("shape error in dot");
+            throw std::runtime_error("matmul not imp yet");
+        }
+    }
+
+    template <typename U>
+    requires arithmetic<U> || std::derived_from<U, Type_t>
+    auto dot(const U& op2) const
+    {
+        if constexpr (std::is_arithmetic_v<U>) {
+            return *this * op2;
+        } else if constexpr (M == U::shape_size && M == 1) {
+            if (shape == op2.shape) {
+                I ret = static_cast<const cv::Mat*>(this)->dot(This_t(op2));
+                return ret;
+            } else {
+                throw std::runtime_error("shape error in dot");
+            }
+
+        } else if constexpr (M == U::shape_size && M == 2) {
+            return this->matmul(op2);
+        } else {
+
+                throw std::runtime_error("not impliment for dot");
+            // auto is_vector_2d = (shape.size() == 2) && (op2.shape.size() == 2)
+            //     && (shape == op2.shape) && (shape[0] == 1 || shape[1] == 1);
+            // auto is_vector_1d = (shape.size() == 1) && (op2.shape.size() == 1) && (shape == op2.shape);
+
+            // if (is_vector_2d || is_vector_1d) {
+            //     I ret = static_cast<const cv::Mat*>(this)->dot(This_t(op2));
+            //     return ret;
+            // } else {
+            //     throw std::runtime_error("shape error in dot");
+            // }
         }
     }
 
@@ -281,14 +320,7 @@ public:
             ret.shape = shape;
             return ret;
         } else if constexpr (std::derived_from<U, Type_t>) {
-            if ((shape.size() == 2)
-                && (op2.shape.size() == 2)
-                && (shape[1] == op2.shape[0])) {
-                Type_t ret(This_t(static_cast<const cv::Mat&>(*this) * This_t(op2)));
-                ret.shape = Shape(shape[0], op2.shape[1]);
-                return ret;
-            } else if (shape == op2.shape) {
-
+            if (shape == op2.shape) {
                 Type_t ret(This_t(this->mul(This_t(op2))));
                 ret.shape = shape;
                 return ret;

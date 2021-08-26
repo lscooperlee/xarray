@@ -104,6 +104,61 @@ public:
     }
 };
 
+template <int... N>
+class _Shape {
+public:
+
+    constexpr int operator[](int idx) const
+    {
+        return dim[idx];
+    }
+
+    constexpr int& operator[](int idx)
+    {
+        return dim[idx];
+    }
+
+    template <int... M>
+    constexpr bool operator==(Shape<M...> shape) const
+    {
+        if constexpr (sizeof...(M) != sizeof...(N)) {
+            return false;
+        } else {
+            return this->dim == shape.dim;
+        }
+    }
+
+    constexpr int total() const
+    {
+        return std::accumulate(std::begin(dim), std::begin(dim) + size(), 1, std::multiplies<int>());
+    }
+
+    constexpr int size() const
+    {
+        return sizeof...(N);
+    }
+
+    static constexpr std::array<int, sizeof...(N)> dim = {N...};
+};
+
+
+template <int... N>
+std::ostream& operator<<(std::ostream& stream, const _Shape<N...>& s)
+{
+    stream << "(" << s[0];
+
+    // for (auto&& d : s.dim | std::views::drop(1)) {
+    //     stream << ", " << d;
+    // } // clang report error
+    for (unsigned int i = 1; i < sizeof...(N); ++i) {
+        stream << ", " << s[i];
+    }
+
+    stream << ")";
+
+    return stream;
+}
+
 }
 
 #endif

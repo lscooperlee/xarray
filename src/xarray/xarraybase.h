@@ -74,10 +74,10 @@ public:
     using XBase<A, N>::shape;
     using XBase<A, N>::data_storage;
 
-    // XarrayBase(XBase<A, N> base)
-    //     : XBase<A, N>(base)
-    // {
-    // }
+    XarrayBase(XBase<A, N> base)
+        : XBase<A, N>(base)
+    {
+    }
 
     This_t copy() const
     {
@@ -113,10 +113,17 @@ public:
     }
 
     template <typename U>
-    requires XBaseType<U> A dot(const U& op2)
+    requires arithmetic<U> || XBaseType<U> auto dot(const U& op2)
     const
     {
         return I(*this).dot(op2);
+    }
+
+    template <typename U>
+    requires XBaseType<U> auto matmul(const U& op2)
+    const
+    {
+        return I(*this).matmul(op2);
     }
 
     template <typename U>

@@ -44,6 +44,21 @@ public:
         }
     }
 
+    template <typename U>
+    auto dot(const U& op2) const
+    {
+        if (this->shape == op2.shape) {
+            int sp = this->shape[0] == 1 ? this->shape[1] : this->shape[0];
+            Shape<1> new_shape(sp);
+
+            auto t1 = XarrayBase<A, 1>(new_shape, this->data_storage);
+            auto t2 = XarrayBase<A, 1>(new_shape, op2.data_storage);
+            return t1.dot(t2);
+        } else {
+            throw std::runtime_error("matrix dot, shape wrong");
+        }
+    }
+
 private:
     template <int K, int M>
     static constexpr int get_first_num()
