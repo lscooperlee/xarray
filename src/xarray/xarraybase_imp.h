@@ -157,6 +157,39 @@ public:
         return cv::determinant(static_cast<const cv::Mat&>(*this));
     }
 
+    std::tuple<Type_t, XarrayBase<I, 1, CVXarrayBaseImp<I, 1>>, Type_t> svd() const
+    {
+        if constexpr (M == 2) {
+
+            auto s = cv::SVD(static_cast<const cv::Mat&>(*this), cv::SVD::FULL_UV);
+            // std::cout << s.u << std::endl << std::endl;
+            // std::cout << s.w << std::endl << std::endl;
+            // std::cout << s.vt << std::endl << std::endl;
+            // cv::Mat su, sw, svt;
+            // cv::SVD::compute(static_cast<const cv::Mat&>(*this), sw, su, svt, cv::SVD::FULL_UV);
+
+            auto u = Type_t(This_t(s.u));
+            u.shape = Shape(shape[0], shape[0]); // if for FULL_UV
+
+            auto vt = Type_t(This_t(s.vt));
+            vt.shape = Shape(shape[1], shape[1]); // if for FULL_UV
+
+            // auto m = CVXarrayBaseImp<I, 1>(static_cast<const cv::Mat&>(*this) * new_op2);
+            // XarrayBase<I, 1, CVXarrayBaseImp<I, 1>> ret(m);
+            auto w = XarrayBase<I, 1, CVXarrayBaseImp<I, 1>>(CVXarrayBaseImp<I, 1>(s.w));
+            w.shape = Shape(std::min(shape[0], shape[1])); // if for FULL_UV
+
+            // std::cout << u << std::endl
+            //           << std::endl;
+            // std::cout << w << std::endl
+            //           << std::endl;
+            // std::cout << vt << std::endl
+            //           << std::endl;
+
+            return std::tie(u, w, vt);
+        }
+    }
+
     Type_t inv() const
     {
         Type_t ret(This_t(static_cast<const cv::Mat*>(this)->inv(cv::DECOMP_SVD)));
@@ -222,7 +255,7 @@ public:
             return this->matmul(op2);
         } else {
 
-                throw std::runtime_error("not impliment for dot");
+            throw std::runtime_error("not impliment for dot");
             // auto is_vector_2d = (shape.size() == 2) && (op2.shape.size() == 2)
             //     && (shape == op2.shape) && (shape[0] == 1 || shape[1] == 1);
             // auto is_vector_1d = (shape.size() == 1) && (op2.shape.size() == 1) && (shape == op2.shape);

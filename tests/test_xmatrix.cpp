@@ -73,7 +73,7 @@ TEST_CASE("xmatrix", "[xtest]")
     REQUIRE(isclose(sm3, Xmatrix({ { -1.0 }, { 1.0 } })));
 
     Xmatrix im2 = { { 1.0, 2.0, 3.0 }, { 3.0, 2.0, 1.0 } };
-    REQUIRE(isclose(im2[Index({ 0 }, { 2 })], Xmatrix({ { 3.0 } })));
+    REQUIRE(isclose(im2[Index( 0,  2 )], Xmatrix({ { 3.0 } })));
     REQUIRE(isclose(im2[Index({ 1 }, { 0, 3, 2 })], Xmatrix({ { 3.0, 1.0 } })));
     REQUIRE(isclose(im2[Index({ 0, 2 }, { 2 })], Xmatrix({ { 3.0 }, { 1.0 } })));
 

@@ -31,5 +31,5 @@ TEST_CASE("index")
     REQUIRE(c1.shape == Shape(2));
 
     REQUIRE(isclose(Xarray({ 1.0, 3.0 }), t[Index({ 0 }, { 0, 4, 2 })]));
-    REQUIRE(t[Index({ 0 }, { 2 })] == 3.0);
+    REQUIRE(t[Index(0, 2)] == 3.0);
 }

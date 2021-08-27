@@ -30,13 +30,20 @@ TEST_CASE("xarray")
 
     auto x31 = Xarray({ 1.0, 0.0, 1.0 });
     auto x21 = Xarray({ -1.0, 1.0 });
-    REQUIRE(isclose(x32.matmul(x21), Xarray({0.1, 0.1, 0.1})));
-    REQUIRE(isclose(x31.matmul(x32), Xarray({0.6, 0.8})));
+    REQUIRE(isclose(x32.matmul(x21), Xarray({ 0.1, 0.1, 0.1 })));
+    REQUIRE(isclose(x31.matmul(x32), Xarray({ 0.6, 0.8 })));
     REQUIRE(isclose(x32.matmul(x22), Xarray({ { 0.57, 0.7 }, { 1.45, 1.42 }, { 2.33, 2.14 } })));
 
     REQUIRE(isclose(x22.inv(), Xarray({ { 0.330739, -0.0194553 }, { -0.126459, 0.301556 } })));
 
-    // REQUIRE(all(x32.T() == Xarray({ { 0.1, 0.3, 0.5 }, { 0.2, 0.4, 0.6 } })));
+    auto xsvd = Xarray({ { 0.29658888, -0.19843645 }, { -0.63928474, -0.62971046 }, { 0.21215595, 0.55278224 } });
+    auto [u, w, vt] = svd(xsvd);
+    REQUIRE(isclose(u,
+        Xarray({ { 0.030069, -0.862362, -0.505398 }, { -0.844925, 0.248218, -0.473804 }, { 0.534039, 0.44127, -0.721168 } })));
+    REQUIRE(isclose(w, Xarray({1.05511, 0.412167})));
+    REQUIRE(isclose(vt, Xarray({{0.627768, 0.7784}, {-0.7784, 0.627768}})));
+
+    //REQUIRE(isclose(x32.T(), Xarray({ { 0.1, 0.3, 0.5 }, { 0.2, 0.4, 0.6 } })));
 
     // REQUIRE(all((x1 + x2 - x3) == Xarray({ 1.1, 2.0 })));
     // REQUIRE(all(x2 / 2 == Xarray({ 1.1, 2.0 })));

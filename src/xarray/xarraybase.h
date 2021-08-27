@@ -227,6 +227,12 @@ A det(const XarrayBase<A, N, I>& op1)
 }
 
 template <typename A, int N, typename I>
+auto svd(const XarrayBase<A, N, I>& op1)
+{
+    return I(op1).svd();
+}
+
+template <typename A, int N, typename I>
 bool all(const XarrayBase<A, N, I>& op1)
 {
     return I(op1).all();

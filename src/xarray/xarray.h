@@ -3,12 +3,10 @@
 
 #include "xarray/xarraybase.h"
 
-namespace xa
-{
-
+namespace xa {
 
 template <typename A, int N>
-class Xarray: public XarrayBase<A, N> {
+class Xarray : public XarrayBase<A, N> {
 public:
     using XarrayBase<A, N>::XarrayBase;
 
@@ -23,22 +21,16 @@ public:
         }
     }
 
-    Xarray(const std::initializer_list<A>& data_):XarrayBase<A, N>(Shape(data_.size()), data_)
+    Xarray(const std::initializer_list<A>& data_)
+        : XarrayBase<A, N>(Shape(data_.size()), data_)
     {
     }
 
-    // template <int... M>
-    // auto operator[](const Index<M...>& idx) const
-    // {
-    //     auto new_shape = this->data_storage.get_shape(idx, this->shape);
-    //     auto new_data = this->data_storage.copy(idx, this->shape);
-    //     if constexpr (new_shape.size() == 0) {
-    //         assert (new_data.size() == 1);
-    //         return new_data[0];
-    //     } else {
-    //         return Xarray<A, new_shape.size()>(new_shape, std::move(new_data));
-    //     }
-    // }
+    template <template <typename> typename C>
+    Xarray(Shape<N> shape, const C<A>& container)
+        : XarrayBase<A, N>(shape, container)
+    {
+    }
 };
 
 template <typename A>

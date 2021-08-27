@@ -51,12 +51,25 @@ private:
     std::array<int, N> value = {};
 };
 
+template <int K, int... M>
+static constexpr bool all_not_one()
+{
+    if constexpr (sizeof...(M) == 0) {
+        return K == 1;
+    } else {
+        return !(all_not_one<M...>() && (K == 1));
+    }
+}
+
 template <int... N>
 class Index {
 
 public:
-    constexpr Index(const int (&... n)[N]) noexcept
+    constexpr Index(const int (&... n)[N]) noexcept requires(all_not_one<N...>())
         : data(n...) {};
+
+    constexpr Index(int a, int b) noexcept
+        : data({ { a } }, { { b } }) {};
 
     template <int K>
     constexpr int start() const noexcept requires(K < sizeof...(N))
@@ -89,9 +102,8 @@ public:
     std::tuple<Index1D<N>...> data = {};
 };
 
-class Idx {
-public:
-};
+template <int... N>
+Index(int a, int b) -> Index<1, 1>;
 
 }
 
