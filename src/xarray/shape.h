@@ -27,6 +27,9 @@ public:
     constexpr Shape(const int (&d)[N]) noexcept requires(N > 0)
         : dim(std::to_array(d)) {};
 
+    constexpr Shape(const std::array<int, N>& d) noexcept requires(N > 0)
+        : dim(d) {};
+
     explicit constexpr Shape(int d1) noexcept requires(N == 1)
         : dim({ d1 })
     {
@@ -98,6 +101,8 @@ Shape(int d1, int d2, int d3)->Shape<3>;
 template <>
 class Shape<0> {
 public:
+    constexpr Shape() noexcept = default;
+    constexpr Shape(const std::array<int, 0>&) noexcept {};
     constexpr int size() const
     {
         return 0;

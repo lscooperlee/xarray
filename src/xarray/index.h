@@ -1,6 +1,7 @@
 #ifndef INDEX_H
 #define INDEX_H
 
+#include <algorithm>
 #include <array>
 #include <concepts>
 #include <initializer_list>
@@ -23,21 +24,6 @@ public:
         return value[K];
     }
 
-    constexpr int start() const noexcept
-    {
-        return get<0>();
-    }
-
-    constexpr int stop() const noexcept
-    {
-        if constexpr (N > 1) {
-            return get<1>();
-        } else {
-            // return std::numeric_limits<int>::max();
-            return start() + 1;
-        }
-    }
-
     constexpr int step() const noexcept
     {
         if constexpr (N > 2) {
@@ -46,6 +32,28 @@ public:
             return 1;
         }
     }
+
+    constexpr int start(int size) const noexcept
+    {
+        if constexpr (N == 1) {
+            auto tmp = get<0>();
+            return tmp < 0 ? tmp + size : tmp;
+        } else {
+            auto tmp = get<0>();
+            return std::clamp(tmp < 0 ? tmp + size : tmp, 0, size - 1);
+        }
+    }
+
+    constexpr int stop(int size) const noexcept
+    {
+        if constexpr (N == 1) {
+            return start(size) + 1;
+        } else {
+            auto tmp = get<1>();
+            return std::clamp(tmp < 0 ? tmp + size : tmp, -1, size);
+        }
+    }
+
 
 private:
     std::array<int, N> value = {};
@@ -68,39 +76,23 @@ public:
     constexpr Index(const int (&... n)[N]) noexcept requires(all_not_one<N...>())
         : data(n...) {};
 
+    constexpr Index(int a) noexcept
+        : data({ { a } }) {};
+
     constexpr Index(int a, int b) noexcept
         : data({ { a } }, { { b } }) {};
 
-    template <int K>
-    constexpr int start() const noexcept requires(K < sizeof...(N))
+    template <int K, int J>
+    constexpr int get() const noexcept requires(K < sizeof...(N))
     {
-        return std::get<K>(data).template get<0>();
-    }
-
-    template <int K>
-    constexpr int stop() const noexcept requires(K < sizeof...(N))
-    {
-        const auto& o = std::get<K>(data);
-        if constexpr (std::remove_cvref_t<decltype(o)>::size > 1) {
-            return o.template get<1>();
-        } else {
-            return -1;
-        }
-    }
-
-    template <int K>
-    constexpr int step() const noexcept requires(K < sizeof...(N))
-    {
-        const auto& o = std::get<K>(data);
-        if constexpr (std::remove_cvref_t<decltype(o)>::size > 2) {
-            return o.template get<2>();
-        } else {
-            return 1;
-        }
+        return std::get<K>(data).template get<J>();
     }
 
     std::tuple<Index1D<N>...> data = {};
 };
+
+template <int... N>
+Index(int a) -> Index<1>;
 
 template <int... N>
 Index(int a, int b) -> Index<1, 1>;

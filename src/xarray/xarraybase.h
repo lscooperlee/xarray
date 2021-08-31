@@ -95,6 +95,7 @@ public:
     auto operator[](const Index<M...>& idx) const
     {
         auto new_shape = data_storage.get_shape(idx, shape);
+
         auto new_data = data_storage.copy(idx, shape);
         if constexpr (new_shape.size() == 0) {
             assert(new_data.size() == 1);

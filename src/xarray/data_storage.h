@@ -31,7 +31,7 @@ public:
     {
     }
 
-    template <template <class> class U>
+    template <template <class, class...> class U>
     DataStorage(const U<T>& u)
         : idata(std::make_shared<InternalData<T>>(u))
     {
@@ -80,136 +80,127 @@ public:
     }
 
     template <int K, int... M>
-    auto mask(const Index<M...>& index, Shape<K> shape) const
+    DataStorage<T> copy(const Index<M...>& index, Shape<K> shape) const
     {
-        assert(sizeof...(M) <= shape.size());
+        auto msk = get_mask(index, shape);
+        auto stride = get_stride(shape);
 
-        std::vector<std::vector<unsigned char>> mask = {};
-        int count = 0;
+        std::vector<T> tmp = {};
+        std::array<int, msk.size()> out = {};
+        loop<msk.size()>(msk, out, [&stride, &tmp, this](const auto& o) {
+            auto idx = std::transform_reduce(stride.begin(), stride.end(), o.begin(), 0);
+            tmp.push_back((*this)[idx]);
+        });
 
-        auto index1 = [&mask, &shape, &count](auto&& index1d) {
-            auto start = index1d.start();
-            auto stop = index1d.stop();
-            auto step = index1d.step();
-
-            auto stride = shape[count++];
-            std::vector<unsigned char> idxidx(stride, 0);
-
-            auto real_stop = stride < stop ? stride : stop;
-            for (int i = start; i < real_stop; i += step) {
-                idxidx[i] = 1;
-            }
-
-            mask.push_back(idxidx);
-        };
-
-        std::apply([&index1](auto&&... args) { (index1(args), ...); },
-            index.data);
-
-        for (int i = sizeof...(M); i < shape.size(); ++i) {
-            std::vector<unsigned char> idxidx(shape[i], 0);
-            for (int j = 0; j < shape[i]; ++j) {
-                idxidx[j] = 1;
-            }
-            mask.push_back(idxidx);
-        }
-
-        return mask;
+        return DataStorage<T>(tmp.data(), tmp.size());
     }
 
-    template <int K>
-    auto gen_idx(auto idx_mask, Shape<K> shape) const
+    template <int K, int... M>
+    auto get_mask(const Index<M...>& index, Shape<K> shape) const
     {
-        int total = shape.total();
-        std::vector<int> indices(idx_mask.size(), 0);
+        std::array<std::array<int, 3>, shape.size()> ret = {};
 
-        std::vector<int> stride(shape.size());
-        int last = 1;
-        stride[shape.size() - 1] = last;
-        for (int i = 1; i < shape.size(); ++i) {
-            last = shape[i] * last;
-            stride[shape.size() - i - 1] = last;
-        }
+        int count = 0;
+        auto fill = [&ret, &count, &shape](auto&& idx1d) {
+            ret[count][0] = idx1d.start(shape[count]);
+            ret[count][1] = idx1d.stop(shape[count]);
+            ret[count][2] = idx1d.step();
+            count++;
+        };
+        std::apply([&fill](auto&&... args) { (fill(args), ...); }, index.data);
 
-        std::vector<bool> ret = {};
-
-        for (int j = 0; j < total; ++j) {
-
-            int tmp = j;
-            for (int i = shape.size() - 1; i >= 0; --i) {
-                indices[i] = tmp % shape[i];
-                tmp = tmp / shape[i];
-            }
-
-            int idxidx = 0;
-            bool is_indexed = std::all_of(idx_mask.begin(), idx_mask.end(), [&idxidx, &indices](const auto& c) {
-                return c[indices[idxidx++]];
-            });
-
-            ret.push_back(is_indexed);
+        for (int i = sizeof...(M); i < shape.size(); ++i) {
+            ret[i][0] = 0;
+            ret[i][1] = shape[i];
+            ret[i][2] = 1;
         }
 
         return ret;
     }
 
-    template <int K, int... M>
-    auto get_shape(const Index<M...>& index, Shape<K> shape) const
+    template <int K>
+    auto loop(const auto& mask, auto& out, const auto& func) const
     {
-        std::vector<int> val = {};
-        int count = 0;
-
-        auto _get_shape = [&val, &shape, &count](auto&& index1d) {
-            if (index1d.size != 1) {
-                auto start = index1d.start();
-                auto stop = index1d.stop();
-                auto step = index1d.step();
-
-                auto stride = shape[count];
-                auto real_stop = stride < stop ? stride : stop;
-                // std::cout << start << ", " << real_stop << ", " << step << std::endl;
-                // std::cout << (real_stop - start) / step << std::endl;
-                int sp = 0;
-                for (int i = start; i < real_stop; i += step) {
-                    sp++;
-                }
-                val.push_back(sp);
+        auto is_in_range = [](auto a, auto b, auto c) {
+            if (a <= b) {
+                return c >= a && c < b;
+            } else {
+                return c <= a && c > b;
             }
-            count++;
         };
 
-        std::apply([&_get_shape](auto&&... args) { (_get_shape(args), ...); },
-            index.data);
+        auto start = mask[K - 1][0];
+        auto stop = mask[K - 1][1];
+        auto step = mask[K - 1][2];
 
-        for (int i = sizeof...(M); i < shape.size(); ++i) {
-            val.push_back(shape[i]);
-        }
-        constexpr int m = get_shape_size<M...>() + shape.size() - sizeof...(M);
-
-        if constexpr (m == 0) {
-            return Shape<m>();
-        } else if constexpr (m == 1) {
-            return Shape(val[0]);
-        } else if constexpr (m == 2) {
-            return Shape(val[0], val[1]);
+        if constexpr (K == 1) {
+            for (int i = start; is_in_range(start, stop, i); i += step) {
+                out[K - 1] = i;
+                func(out);
+            }
         } else {
-            return Shape(val[0], val[1], val[2]);
+            for (int i = start; is_in_range(start, stop, i); i += step) {
+                out[K - 1] = i;
+                loop<K - 1>(mask, out, func);
+            }
         }
     }
 
-    template <int K, int... M>
-    DataStorage<T> copy(const Index<M...>& index, Shape<K> shape) const
+    template <int K>
+    auto get_stride(Shape<K> shape) const
     {
-        auto msk = mask(index, shape);
-        auto idx = gen_idx(msk, shape);
-
-        std::vector<T> tmp = {};
-        for (size_type i = 0; i < idata->size(); ++i) {
-            if (idx[i]) {
-                tmp.push_back((*this)[i]);
-            }
+        int total = shape.total();
+        std::array<int, K> stride = {};
+        for (int i = 0; i < shape.size(); ++i) {
+            stride[i] = total / shape[i];
+            total = stride[i];
         }
 
-        return DataStorage<T>(tmp.data(), tmp.size());
+        return stride;
+    }
+
+    template <int K, int... M>
+    auto get_shape(const Index<M...>& index, Shape<K> shape) const
+    {
+        constexpr int m = get_shape_size<M...>() + shape.size() - sizeof...(M);
+
+        std::array<int, m> val = {};
+        int val_idx = 0;
+        int count = 0;
+
+        auto _get_shape = [&val, &val_idx, &count, &shape](auto&& idx1d) {
+            if (idx1d.size != 1) {
+
+                auto is_in_range = [](auto a, auto b, auto c) {
+                    if (a <= b) {
+                        return c >= a && c < b;
+                    } else {
+                        return c <= a && c > b;
+                    }
+                };
+
+                auto start = idx1d.start(shape[count]);
+                auto stop = idx1d.stop(shape[count]);
+                auto step = idx1d.step();
+
+                int sp = 0;
+                for (int i = start; is_in_range(start, stop, i); i += step) {
+                    sp++;
+                }
+
+                val[val_idx++] = sp;
+            }
+
+            count++;
+        };
+
+        std::apply([&_get_shape](auto&&... args) { (_get_shape(args), ...); }, index.data);
+
+        for (int i = sizeof...(M); i < shape.size(); ++i) {
+            val[val_idx++] = shape[i];
+        }
+
+        return Shape<m>(val);
     }
 
     std::shared_ptr<InternalData<T>> idata = {};
@@ -221,7 +212,8 @@ private:
         if constexpr (sizeof...(M) == 0) {
             return K == 1 ? 0 : 1;
         } else {
-            return get_shape_size<M...>() + K == 1 ? 0 : 1;
+            constexpr auto tmp = K == 1 ? 0 : 1;
+            return get_shape_size<M...>() + tmp;
         }
     }
 };

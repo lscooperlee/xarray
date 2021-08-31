@@ -1,6 +1,18 @@
 {
 	"files.associations": {
 		"stdexcept": "cpp",
-		"*.tcc": "cpp"
+		"*.tcc": "cpp",
+		"array": "cpp",
+		"vector": "cpp",
+		"functional": "cpp",
+		"initializer_list": "cpp",
+		"iosfwd": "cpp",
+		"istream": "cpp",
+		"new": "cpp",
+		"ostream": "cpp",
+		"tuple": "cpp",
+		"type_traits": "cpp",
+		"utility": "cpp",
+		"bitset": "cpp"
 	}
 }
