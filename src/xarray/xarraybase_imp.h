@@ -44,8 +44,14 @@ private:
             type = CV_64F;
         } else if constexpr (std::is_same_v<I, char>) {
             type = CV_8S;
+        } else if constexpr (std::is_same_v<I, unsigned char>) {
+            type = CV_8U;
+        } else if constexpr (std::is_same_v<I, int>) {
+            type = CV_32S;
+        } else if constexpr (std::is_same_v<I, bool>) {
+            type = CV_8U;
         } else {
-            std::cout << "float double bool when create XarrayImp";
+            throw std::runtime_error("float double bool when create XarrayImp");
         }
 
         return type;
@@ -210,6 +216,7 @@ public:
         }
     }
 
+
     template <typename U>
     auto matmul(const U& op2) const
     {
@@ -319,30 +326,40 @@ public:
 
     template <typename U>
     requires arithmetic<U> || std::derived_from<U, Type_t>
-    bool operator<(const U&) const
+    auto operator<(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
-            // const auto& self = static_cast<const cv::Mat&>(*this);
-            // Type_t ret(This_t(static_cast<const cv::Mat&>(*this) * op2));
-            // ret.shape = shape;
-            // return ret;
+            Type_t ret(CVXarrayBaseImp<bool, M>(static_cast<const cv::Mat&>(*this) < op2));
+            ret.shape = shape;
+            return ret;
         } else if constexpr (std::derived_from<U, Type_t>) {
-            // if ((shape.size() == 2)
-            //     && (op2.shape.size() == 2)
-            //     && (shape[1] == op2.shape[0])) {
-            //     Type_t ret(This_t(static_cast<const cv::Mat&>(*this) * This_t(op2)));
-            //     ret.shape = Shape(shape[0], op2.shape[1]);
-            //     return ret;
-            // } else if (shape == op2.shape) {
-
-            //     Type_t ret(This_t(this->mul(This_t(op2))));
-            //     ret.shape = shape;
-            //     return ret;
-            // } else {
-            //     throw std::runtime_error("shape error in imp *");
-            // }
+            if (shape == op2.shape) {
+                Type_t ret(CVXarrayBaseImp<bool, M>(static_cast<const cv::Mat&>(*this) < op2));
+                ret.shape = shape;
+                return ret;
+            } else {
+                throw std::runtime_error("shape error in <");
+            }
         }
-        return true;
+    }
+
+    template <typename U>
+    requires arithmetic<U> || std::derived_from<U, Type_t>
+    auto operator==(const U& op2) const
+    {
+        if constexpr (std::is_arithmetic_v<U>) {
+            Type_t ret(CVXarrayBaseImp<bool, M>(static_cast<const cv::Mat&>(*this) == op2));
+            ret.shape = shape;
+            return ret;
+        } else if constexpr (std::derived_from<U, Type_t>) {
+            if (shape == op2.shape) {
+                XarrayBase<bool, M, CVXarrayBaseImp<bool, M>> ret(CVXarrayBaseImp<bool, M>(static_cast<const cv::Mat&>(*this) == This_t(op2)));
+                ret.shape = shape;
+                return ret;
+            } else {
+                throw std::runtime_error("shape error in <");
+            }
+        }
     }
 
     template <typename U>

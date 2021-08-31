@@ -16,6 +16,10 @@ TEST_CASE("xarray")
     REQUIRE(x1.shape.size() == 1);
     REQUIRE(isclose(x1, x2));
 
+    auto i1 = Xarray({ 1, 2, 3, 4, 5, 6 });
+    auto tt1 = i1.reshape(Shape(2, 3)) == Xarray({ { 1, 2, 3 }, { 4, 5, 6 } });
+    REQUIRE(all(tt1));
+
     auto x3 = x1 * 2;
     REQUIRE(isclose(x3, Xarray({ 2.2, 4.0 })));
     REQUIRE(isclose(2 * x1, x3));
@@ -40,10 +44,10 @@ TEST_CASE("xarray")
     auto [u, w, vt] = svd(xsvd);
     REQUIRE(isclose(u,
         Xarray({ { 0.030069, -0.862362, -0.505398 }, { -0.844925, 0.248218, -0.473804 }, { 0.534039, 0.44127, -0.721168 } })));
-    REQUIRE(isclose(w, Xarray({1.05511, 0.412167})));
-    REQUIRE(isclose(vt, Xarray({{0.627768, 0.7784}, {-0.7784, 0.627768}})));
+    REQUIRE(isclose(w, Xarray({ 1.05511, 0.412167 })));
+    REQUIRE(isclose(vt, Xarray({ { 0.627768, 0.7784 }, { -0.7784, 0.627768 } })));
 
-    //REQUIRE(isclose(x32.T(), Xarray({ { 0.1, 0.3, 0.5 }, { 0.2, 0.4, 0.6 } })));
+    REQUIRE(isclose(x32.T(), Xarray({ { 0.1, 0.3, 0.5 }, { 0.2, 0.4, 0.6 } })));
 
     // REQUIRE(all((x1 + x2 - x3) == Xarray({ 1.1, 2.0 })));
     // REQUIRE(all(x2 / 2 == Xarray({ 1.1, 2.0 })));

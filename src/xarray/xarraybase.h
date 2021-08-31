@@ -32,6 +32,13 @@ public:
     {
     }
 
+    // template <class C>
+    // XBase(const Shape<N>& shape_, const C& data_)
+    //     : shape(shape_)
+    //     , data_storage(data_)
+    // {
+    // }
+
     template <class C>
     XBase(const Shape<N>& shape_, C&& data_)
         : shape(shape_)
@@ -45,12 +52,12 @@ public:
     {
     }
 
-    const A* raw() const
+    const auto* raw() const
     {
         return this->data_storage.data();
     }
 
-    A* raw()
+    auto* raw()
     {
         return this->data_storage.data();
     }
@@ -112,6 +119,12 @@ public:
         return I(*this).T();
     }
 
+    template <int M>
+    auto reshape(const Shape<M>& shape)
+    {
+        return XarrayBase<A, M, XarrayBaseImp<A, M>>(shape, data_storage);
+    }
+
     template <typename U>
     requires arithmetic<U> || XBaseType<U> auto dot(const U& op2)
     const
@@ -168,6 +181,12 @@ public:
     {
         I(*this) -= op2;
         return *this;
+    }
+
+    template <typename U>
+    auto operator==(const U& op2)
+    {
+        return I(*this) == op2;
     }
 };
 

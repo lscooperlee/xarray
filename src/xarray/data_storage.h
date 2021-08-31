@@ -31,9 +31,15 @@ public:
     {
     }
 
-    template <typename U>
-    DataStorage(U&& u)
-        : idata(std::make_shared<InternalData<T>>(std::forward<U>(u)))
+    template <template <class> class U>
+    DataStorage(const U<T>& u)
+        : idata(std::make_shared<InternalData<T>>(u))
+    {
+    }
+
+    template <int... K>
+    DataStorage(const DataStorage<T, K...>& u)
+        : idata(u.idata)
     {
     }
 
@@ -58,12 +64,12 @@ public:
         return (*idata)[idx];
     }
 
-    T* data()
+    auto* data()
     {
         return (*idata).data();
     }
 
-    const T* data() const
+    const auto* data() const
     {
         return (*idata).data();
     }
