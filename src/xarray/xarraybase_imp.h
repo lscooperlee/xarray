@@ -389,7 +389,7 @@ public:
             return ret;
         } else if constexpr (std::derived_from<U, Type_t>) {
             if (shape == op2.shape) {
-                Type_t ret(This_t(static_cast<const cv::Mat&>(*this) - This_t(op2)));
+                Type_t ret(This_t(static_cast<const cv::Mat&>(*this) / This_t(op2)));
                 ret.shape = shape;
                 return ret;
             } else {
@@ -508,6 +508,12 @@ public:
         ret.shape = shape;
 
         return ret;
+    }
+
+    I sum() const
+    {
+        const auto& self = static_cast<const cv::Mat&>(*this);
+        return cv::sum(self)[0];
     }
 
     template <typename U>

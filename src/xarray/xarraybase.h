@@ -185,10 +185,12 @@ public:
     }
 
     template <typename U>
-    auto operator==(const U& op2)
+    requires arithmetic<U> || XBaseType<U>
+    auto operator==(const U& op2) const
     {
         return I(*this) == op2;
     }
+
 };
 
 template <typename A, int N, typename I>
@@ -316,6 +318,12 @@ template <typename A, int N, typename I>
 XarrayBase<A, N, I> sqrt(const XarrayBase<A, N, I>& op1)
 {
     return I(op1).sqrt();
+}
+
+template <typename A, int N, typename I>
+A sum(const XarrayBase<A, N, I>& op1)
+{
+    return I(op1).sum();
 }
 
 template <typename A, int N, typename I>

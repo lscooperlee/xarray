@@ -49,15 +49,17 @@ TEST_CASE("xarray")
 
     REQUIRE(isclose(x32.T(), Xarray({ { 0.1, 0.3, 0.5 }, { 0.2, 0.4, 0.6 } })));
 
-    // REQUIRE(all((x1 + x2 - x3) == Xarray({ 1.1, 2.0 })));
-    // REQUIRE(all(x2 / 2 == Xarray({ 1.1, 2.0 })));
-    // REQUIRE(all(x2 / x3 == Xarray({ 1.0, 1.0 })));
+    REQUIRE(all((x1 + x2 - x3) == Xarray<double, 1>({ 0, 0 })));
+    REQUIRE(all(x2 / 2 == Xarray({ 0.5, 1.0 })));
+    REQUIRE(all(x2 / x3 == Xarray({ 0.5, 0.5 })));
 
-    // x2 -= x1;
-    // REQUIRE(all(x2 == Xarray({ 1.1, 2.0 })));
-    // x2 += x1;
-    // REQUIRE(all(x2 == Xarray({ 2.2, 4.0 })));
+    auto xdet = Xarray<float, 2>({ { 50, 29 }, { 30, 44 } });
+    REQUIRE(det(xdet) == 1330);
 
-    // auto xdet = Xarray<float>({ { 50, 29 }, { 30, 44 } });
-    // REQUIRE(det(xdet) == 1330);
+    x2 -= x1;
+    REQUIRE(all(x2 == Xarray({ 0.0, 0.0 })));
+    x2 += x1;
+    REQUIRE(all(x2 == Xarray({ 1.0, 2.0 })));
+
+    REQUIRE(sum(Xarray({ 0.5, 1.5 })) == 2);
 }

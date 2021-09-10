@@ -31,6 +31,12 @@ public:
         : XarrayBase<A, N>(shape, container)
     {
     }
+
+    //will give warnings for Xarray: -Wambiguous-reversed-operator if no overload
+    auto operator==(const Xarray<A, N>& op2) const
+    {
+        return static_cast<const XarrayBase<A, N>&>(*this) == op2;
+    }
 };
 
 template <typename A>
