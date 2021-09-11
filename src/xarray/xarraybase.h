@@ -127,15 +127,17 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U> auto dot(const U& op2)
-    const
+    requires arithmetic<U> || XBaseType<U>
+    auto dot(const U& op2)
+        const
     {
         return I(*this).dot(op2);
     }
 
     template <typename U>
-    requires XBaseType<U> auto matmul(const U& op2)
-    const
+    requires XBaseType<U>
+    auto matmul(const U& op2)
+        const
     {
         return I(*this).matmul(op2);
     }
@@ -155,30 +157,28 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U> This_t 
+    requires arithmetic<U> || XBaseType<U> This_t
     operator-(const U& op2) const
     {
         return I(*this) - op2;
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U> This_t 
+    requires arithmetic<U> || XBaseType<U> This_t
     operator+(const U& op2) const
     {
         return I(*this) + op2;
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U> This_t
-    &operator+=(const U& op2)
+    requires arithmetic<U> || XBaseType<U> This_t& operator+=(const U& op2)
     {
         I(*this) += op2;
         return *this;
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U> This_t
-    &operator-=(const U& op2)
+    requires arithmetic<U> || XBaseType<U> This_t& operator-=(const U& op2)
     {
         I(*this) -= op2;
         return *this;
@@ -190,7 +190,6 @@ public:
     {
         return I(*this) == op2;
     }
-
 };
 
 template <typename A, int N, typename I>
@@ -318,6 +317,12 @@ template <typename A, int N, typename I>
 XarrayBase<A, N, I> sqrt(const XarrayBase<A, N, I>& op1)
 {
     return I(op1).sqrt();
+}
+
+template <typename A, int N, typename I>
+XarrayBase<A, N, I> repeat(const XarrayBase<A, N, I>& op1, int repeats)
+{
+    return I(op1).repeat(repeats);
 }
 
 template <typename A, int N, typename I>

@@ -168,11 +168,6 @@ public:
         if constexpr (M == 2) {
 
             auto s = cv::SVD(static_cast<const cv::Mat&>(*this), cv::SVD::FULL_UV);
-            // std::cout << s.u << std::endl << std::endl;
-            // std::cout << s.w << std::endl << std::endl;
-            // std::cout << s.vt << std::endl << std::endl;
-            // cv::Mat su, sw, svt;
-            // cv::SVD::compute(static_cast<const cv::Mat&>(*this), sw, su, svt, cv::SVD::FULL_UV);
 
             auto u = Type_t(This_t(s.u));
             u.shape = Shape(shape[0], shape[0]); // if for FULL_UV
@@ -180,17 +175,8 @@ public:
             auto vt = Type_t(This_t(s.vt));
             vt.shape = Shape(shape[1], shape[1]); // if for FULL_UV
 
-            // auto m = CVXarrayBaseImp<I, 1>(static_cast<const cv::Mat&>(*this) * new_op2);
-            // XarrayBase<I, 1, CVXarrayBaseImp<I, 1>> ret(m);
             auto w = XarrayBase<I, 1, CVXarrayBaseImp<I, 1>>(CVXarrayBaseImp<I, 1>(s.w));
             w.shape = Shape(std::min(shape[0], shape[1])); // if for FULL_UV
-
-            // std::cout << u << std::endl
-            //           << std::endl;
-            // std::cout << w << std::endl
-            //           << std::endl;
-            // std::cout << vt << std::endl
-            //           << std::endl;
 
             return std::tie(u, w, vt);
         }
@@ -205,7 +191,7 @@ public:
 
     Type_t T() const
     {
-        if (shape.size() == 1) {
+        if constexpr (M == 1) {
             Type_t ret(This_t(*this));
             return ret;
         } else {
@@ -216,6 +202,17 @@ public:
         }
     }
 
+    Type_t repeat(int repeats) const
+    {
+        Type_t ret(This_t(cv::repeat(static_cast<const cv::Mat&>(*this), repeats, 1)));
+
+        if constexpr (M == 1) {
+            ret.shape = Shape(shape[0] * repeats);
+        } else {
+            ret.shape = Shape(shape[0], shape[1] * repeats);
+        }
+        return ret;
+    }
 
     template <typename U>
     auto matmul(const U& op2) const
@@ -263,16 +260,6 @@ public:
         } else {
 
             throw std::runtime_error("not impliment for dot");
-            // auto is_vector_2d = (shape.size() == 2) && (op2.shape.size() == 2)
-            //     && (shape == op2.shape) && (shape[0] == 1 || shape[1] == 1);
-            // auto is_vector_1d = (shape.size() == 1) && (op2.shape.size() == 1) && (shape == op2.shape);
-
-            // if (is_vector_2d || is_vector_1d) {
-            //     I ret = static_cast<const cv::Mat*>(this)->dot(This_t(op2));
-            //     return ret;
-            // } else {
-            //     throw std::runtime_error("shape error in dot");
-            // }
         }
     }
 
@@ -281,7 +268,7 @@ public:
     const
     {
         auto is_vector_same_column = (shape.size() == 2) && (op2.shape.size() == 2) && (shape[1] == shape[1]);
-        // auto is_vector_1d = (shape.size() == 1) && (op2.shape.size() == 1) && (shape == op2.shape);
+
         if (is_vector_same_column) {
 
             cv::Mat _;
@@ -296,7 +283,7 @@ public:
             return ret;
 
         } else {
-            throw std::runtime_error("shape error in dot");
+            throw std::runtime_error("shape error in vstack");
         }
     }
 
@@ -320,7 +307,7 @@ public:
             return ret;
 
         } else {
-            throw std::runtime_error("shape error in dot");
+            throw std::runtime_error("shape error in hstack");
         }
     }
 
@@ -393,8 +380,6 @@ public:
                 ret.shape = shape;
                 return ret;
             } else {
-                std::cout << shape << std::endl;
-                std::cout << op2.shape << std::endl;
                 throw std::runtime_error("shape error in imp /");
             }
         }
@@ -420,18 +405,42 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || std::derived_from<U, Type_t> Type_t
-    operator-(const U& op2) const
+    requires arithmetic<U> || XBaseType<U> Type_t operator-(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
             Type_t ret(This_t(static_cast<const cv::Mat&>(*this) - op2));
             ret.shape = shape;
             return ret;
-        } else if constexpr (std::derived_from<U, Type_t>) {
+        } else if constexpr (XBaseType<U>) {
             if (shape == op2.shape) {
-                Type_t ret(This_t(static_cast<const cv::Mat&>(*this) - This_t(op2)));
+                auto op = CVXarrayBaseImp<typename U::value_type, U::shape_size>(op2);
+                Type_t ret(This_t(static_cast<const cv::Mat&>(*this) - op));
                 ret.shape = shape;
                 return ret;
+            } else if ((shape.total() % op2.shape.total()) == 0) {
+                auto times = shape.total() / op2.shape.total();
+                auto _op = CVXarrayBaseImp<typename U::value_type, U::shape_size>(op2);
+
+                auto op = cv::repeat(static_cast<const cv::Mat&>(_op), times, 1);
+                auto [r, _] = get_rc(shape);
+
+                Type_t ret(This_t(static_cast<const cv::Mat&>(*this) - op.reshape(1, r)));
+                ret.shape = shape;
+                return ret;
+
+            } else if ((op2.shape.total() % shape.total()) == 0) {
+
+                // auto times = op2.shape.total() / shape.total();
+
+                // auto op = cv::repeat(static_cast<const cv::Mat&>(*this), times, 1);
+                // auto [r, _] = get_rc(op2.shape);
+
+                // auto _op2 = CVXarrayBaseImp<typename U::value_type, U::shape_size>(op2);
+                // Type_t ret(CVXarrayBaseImp<typename U::value_type, U::shape_size>(op.reshape(1, r) - _op2));
+                // ret.shape = op2.shape;
+                // return ret;
+                throw std::runtime_error("shape error in imp -");
+
             } else {
                 throw std::runtime_error("shape error in imp -");
             }
@@ -538,7 +547,10 @@ private:
 };
 
 template <typename I>
-class CVXarrayBaseImp<I, 0> {
+struct CVXarrayBaseImp<I, 0> {
+    I value;
+    CVXarrayBaseImp(I v)
+        : value(v) {};
 };
 
 }

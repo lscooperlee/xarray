@@ -62,4 +62,10 @@ TEST_CASE("xarray")
     REQUIRE(all(x2 == Xarray({ 1.0, 2.0 })));
 
     REQUIRE(sum(Xarray({ 0.5, 1.5 })) == 2);
+
+    auto xm1 = Xarray({ { 1, 2, 3 }, { 4, 5, 6 } });
+
+    REQUIRE(all(xm1 - Xarray({ 1, 1, 1 }) == Xarray({ { 0, 1, 2 }, { 3, 4, 5 } })));
+
+    REQUIRE(all(repeat(x1, 2) == Xarray({ 1.0, 2.0, 1.0, 2.0 })));
 }
