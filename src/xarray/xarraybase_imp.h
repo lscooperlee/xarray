@@ -81,10 +81,7 @@ public:
         cv::Mat m(rows, cols, get_type());
         cv::randu(m, cv::Scalar(0), cv::Scalar(1));
 
-        TYP<I, M> ret { TT<I, M>(m) };
-        ret.shape = shape;
-
-        return ret;
+        return TYP<I, M> { TT<I, M>(m, shape) };
     }
 
     template <int N>
@@ -95,10 +92,7 @@ public:
         cv::Mat m(rows, cols, get_type());
         cv::randn(m, cv::Scalar(0), cv::Scalar(1));
 
-        TYP<I, M> ret { TT<I, M>(m) };
-        ret.shape = shape;
-
-        return ret;
+        return TYP<I, M> { TT<I, M>(m, shape) };
     }
 
     template <typename C, typename P, int N>
@@ -119,7 +113,6 @@ public:
     }
 
 public:
-    //using cv::Mat::Mat;
     CVXarrayBaseImp(const cv::MatExpr& e, Shape<M> shape_ = {})
         : cv::Mat(e)
         , shape(shape_)
@@ -339,39 +332,73 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U> TYP<I, M>
-    operator+(const U& op2) const
+    requires arithmetic<U> || XBaseType<U>
+    auto operator+(const U& op2) const
     {
-        if constexpr (arithmetic<U>) {
+        if constexpr (std::is_arithmetic_v<U>) {
             return TYP<I, M>(TT<I, M>(static_cast<const cv::Mat&>(*this) + op2, shape));
         } else if constexpr (XBaseType<U>) {
-            if (shape == op2.shape) {
-                return TYP<I, M>(TT<I, M>(static_cast<const cv::Mat&>(*this) + IMP<U>(op2), shape));
+
+            auto constexpr SZ = (U::shape_size > M) ? U::shape_size : M;
+            Shape<SZ> new_shape;
+            if constexpr (U::shape_size > M) {
+                new_shape = op2.shape;
             } else {
-                std::cout << shape << ", " << op2.shape << std::endl;
+                new_shape = shape;
+            }
+
+            if (shape == op2.shape) {
+                return TYP<I, SZ>(TT<I, SZ>(static_cast<const cv::Mat&>(*this) + IMP<U>(op2), new_shape));
+            } else if ((shape.total() % op2.shape.total()) == 0) {
+                auto times = shape.total() / op2.shape.total();
+                auto op = cv::repeat(static_cast<const cv::Mat&>(IMP<U>(op2)), times, 1);
+                auto [r, _] = get_rc(shape);
+
+                return TYP<I, SZ>(TT<I, SZ>(static_cast<const cv::Mat&>(*this) + op.reshape(1, r), new_shape));
+
+            } else if ((op2.shape.total() % shape.total()) == 0) {
+                auto times = op2.shape.total() / shape.total();
+                auto op = cv::repeat(*this, times, 1);
+                auto [r, _] = get_rc(op2.shape);
+
+                return TYP<I, SZ>(TT<I, SZ>(op.reshape(1, r) + IMP<U>(op2), new_shape));
+            } else {
                 throw std::runtime_error("shape error in imp +");
             }
         }
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U> TYP<I, M>
-    operator-(const U& op2) const
+    requires arithmetic<U> || XBaseType<U>
+    auto operator-(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
             return TYP<I, M>(TT<I, M>(static_cast<const cv::Mat&>(*this) - op2, shape));
         } else if constexpr (XBaseType<U>) {
+
+            auto constexpr SZ = (U::shape_size > M) ? U::shape_size : M;
+            Shape<SZ> new_shape;
+            if constexpr (U::shape_size > M) {
+                new_shape = op2.shape;
+            } else {
+                new_shape = shape;
+            }
+
             if (shape == op2.shape) {
-                return TYP<I, M>(TT<I, M>(static_cast<const cv::Mat&>(*this) - IMP<U>(op2), shape));
+                return TYP<I, SZ>(TT<I, SZ>(static_cast<const cv::Mat&>(*this) - IMP<U>(op2), new_shape));
             } else if ((shape.total() % op2.shape.total()) == 0) {
                 auto times = shape.total() / op2.shape.total();
                 auto op = cv::repeat(static_cast<const cv::Mat&>(IMP<U>(op2)), times, 1);
                 auto [r, _] = get_rc(shape);
 
-                return TYP<I, M>(TT<I, M>(static_cast<const cv::Mat&>(*this) - op.reshape(1, r), shape));
+                return TYP<I, SZ>(TT<I, SZ>(static_cast<const cv::Mat&>(*this) - op.reshape(1, r), new_shape));
 
             } else if ((op2.shape.total() % shape.total()) == 0) {
-                throw std::runtime_error("shape error in imp -");
+                auto times = op2.shape.total() / shape.total();
+                auto op = cv::repeat(*this, times, 1);
+                auto [r, _] = get_rc(op2.shape);
+
+                return TYP<I, SZ>(TT<I, SZ>(op.reshape(1, r) - IMP<U>(op2), new_shape));
             } else {
                 throw std::runtime_error("shape error in imp -");
             }

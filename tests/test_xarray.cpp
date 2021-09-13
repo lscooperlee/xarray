@@ -66,6 +66,10 @@ TEST_CASE("xarray")
     auto xm1 = Xarray({ { 1, 2, 3 }, { 4, 5, 6 } });
 
     REQUIRE(all(xm1 - Xarray({ 1, 1, 1 }) == Xarray({ { 0, 1, 2 }, { 3, 4, 5 } })));
+    REQUIRE(all(Xarray({ 1, 1, 1 }) - xm1 == Xarray({ { 0, -1, -2 }, { -3, -4, -5 } })));
+
+    REQUIRE(all(xm1 + Xarray({ 1, 1, 1 }) == Xarray({ { 2, 3, 4 }, { 5, 6, 7 } })));
+    REQUIRE(all(Xarray({ 1, 1, 1 }) + xm1 == Xarray({ { 2, 3, 4 }, { 5, 6, 7 } })));
 
     REQUIRE(all(repeat(x1, 2) == Xarray({ 1.0, 2.0, 1.0, 2.0 })));
 }

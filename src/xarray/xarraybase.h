@@ -157,15 +157,15 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U> This_t
-    operator-(const U& op2) const
+    requires arithmetic<U> || XBaseType<U>
+    auto operator-(const U& op2) const
     {
         return I(*this) - op2;
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U> This_t
-    operator+(const U& op2) const
+    requires arithmetic<U> || XBaseType<U>
+    auto operator+(const U& op2) const
     {
         return I(*this) + op2;
     }
