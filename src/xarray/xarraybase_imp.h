@@ -21,18 +21,17 @@ namespace xa {
 template <typename A, int N, typename I>
 class XarrayBase;
 
-template <typename A, int N>
-class XBase;
-
-// template <typename I, int M=0> requires (M == 0)
-// class CVXarrayBaseImp {
-// };
-
 template <typename I, int M>
 requires(M > 0) class CVXarrayBaseImp : public cv::Mat {
-    using This_t = CVXarrayBaseImp<I, M>;
-    //using Type_t = XBase<I, M>;
-    using Type_t = XarrayBase<I, M, This_t>;
+
+    template <typename A, int N>
+    using TT = CVXarrayBaseImp<A, N>;
+
+    template <typename U>
+    using IMP = CVXarrayBaseImp<typename U::value_type, U::shape_size>;
+
+    template <typename A, int N>
+    using TYP = XarrayBase<A, N, TT<A, N>>;
 
 private:
     static constexpr int get_type()
@@ -75,35 +74,35 @@ private:
 
 public:
     template <int N>
-    static Type_t rand(Shape<N> shape)
+    static TYP<I, M> rand(Shape<N> shape)
     {
         auto [rows, cols] = get_rc(shape);
 
         cv::Mat m(rows, cols, get_type());
         cv::randu(m, cv::Scalar(0), cv::Scalar(1));
 
-        Type_t ret { This_t(m) };
+        TYP<I, M> ret { TT<I, M>(m) };
         ret.shape = shape;
 
         return ret;
     }
 
     template <int N>
-    static Type_t randn(Shape<N> shape)
+    static TYP<I, M> randn(Shape<N> shape)
     {
         auto [rows, cols] = get_rc(shape);
 
         cv::Mat m(rows, cols, get_type());
         cv::randn(m, cv::Scalar(0), cv::Scalar(1));
 
-        Type_t ret { This_t(m) };
+        TYP<I, M> ret { TT<I, M>(m) };
         ret.shape = shape;
 
         return ret;
     }
 
     template <typename C, typename P, int N>
-    static Type_t choice(C&& population, Shape<N> shape, P&& probability)
+    static TYP<I, M> choice(C&& population, Shape<N> shape, P&& probability)
     {
         std::random_device rd;
         std::mt19937 gen(rd());
@@ -116,102 +115,97 @@ public:
             d.append(population[c]);
         }
 
-        return Type_t(shape, d);
+        return TYP<I, M>(shape, d);
     }
 
 public:
     //using cv::Mat::Mat;
-    CVXarrayBaseImp(const cv::MatExpr& e)
+    CVXarrayBaseImp(const cv::MatExpr& e, Shape<M> shape_ = {})
         : cv::Mat(e)
+        , shape(shape_)
     {
     }
 
-    CVXarrayBaseImp(const cv::Mat& e)
+    CVXarrayBaseImp(const cv::Mat& e, Shape<M> shape_ = {})
         : cv::Mat(e)
+        , shape(shape_)
     {
     }
 
-    CVXarrayBaseImp(const Type_t& x)
+    template <typename U>
+    requires XBaseType<U>
+    CVXarrayBaseImp(const U& x)
+        : shape(x.shape)
     {
         auto [rows, cols] = get_rc(x.shape);
-        *this = cv::Mat(rows, cols, get_type(), const_cast<void*>(reinterpret_cast<const void*>((x.raw()))));
-        shape = x.shape; //shape changed by *this = ...
+        static_cast<cv::Mat&>(*this) = cv::Mat(rows, cols, get_type(), const_cast<void*>(reinterpret_cast<const void*>((x.raw()))));
+        //shape = x.shape; //shape changed by *this = ..., static_cast<cv::Mat&>(*this) for the fix
     }
 
-    explicit operator Type_t() const
+    explicit operator TYP<I, M>() const
     {
-        return Type_t(shape, this->ptr<I>(), (this->rows * this->cols));
+        return TYP<I, M>(shape, ptr<I>(), rows * cols);
     }
 
     bool all() const
     {
         cv::Mat _;
-        const auto& self = static_cast<const cv::Mat&>(*this);
-        cv::findNonZero(self, _);
-        return _.total() == size_t(self.cols * self.rows);
+        cv::findNonZero(*this, _);
+        return _.total() == size_t(cols * rows);
     }
 
     template <typename U>
     bool isclose(const U& op1) const
     {
-        auto tmp = static_cast<const cv::Mat&>(*this) - This_t(op1);
-        return This_t(tmp < 0.00001).all();
+        auto tmp = static_cast<const cv::Mat&>(*this) - IMP<U>(op1);
+        return TT<I, M>(tmp < 0.00001).all();
     }
 
     I det() const
     {
-        return cv::determinant(static_cast<const cv::Mat&>(*this));
+        return cv::determinant(*this);
     }
 
-    std::tuple<Type_t, XarrayBase<I, 1, CVXarrayBaseImp<I, 1>>, Type_t> svd() const
+    std::tuple<TYP<I, M>, TYP<I, 1>, TYP<I, M>> svd() const
     {
         if constexpr (M == 2) {
 
-            auto s = cv::SVD(static_cast<const cv::Mat&>(*this), cv::SVD::FULL_UV);
+            auto s = cv::SVD(*this, cv::SVD::FULL_UV);
 
-            auto u = Type_t(This_t(s.u));
+            auto u = TYP<I, M>(TT<I, M>(s.u));
             u.shape = Shape(shape[0], shape[0]); // if for FULL_UV
 
-            auto vt = Type_t(This_t(s.vt));
+            auto vt = TYP<I, M>(TT<I, M>(s.vt));
             vt.shape = Shape(shape[1], shape[1]); // if for FULL_UV
 
-            auto w = XarrayBase<I, 1, CVXarrayBaseImp<I, 1>>(CVXarrayBaseImp<I, 1>(s.w));
+            auto w = TYP<I, 1>(TT<I, 1>(s.w));
             w.shape = Shape(std::min(shape[0], shape[1])); // if for FULL_UV
 
             return std::tie(u, w, vt);
         }
     }
 
-    Type_t inv() const
+    TYP<I, M> inv() const
     {
-        Type_t ret(This_t(static_cast<const cv::Mat*>(this)->inv(cv::DECOMP_SVD)));
-        ret.shape = shape;
-        return ret;
+        return TYP<I, M>(TT<I, M>(this->cv::Mat::inv(cv::DECOMP_SVD), shape));
     }
 
-    Type_t T() const
+    TYP<I, M> T() const
     {
         if constexpr (M == 1) {
-            Type_t ret(This_t(*this));
-            return ret;
+            return TYP<I, M>(*this);
         } else {
-            Type_t ret(This_t(static_cast<const cv::Mat*>(this)->t()));
-            ret.shape[0] = shape[1];
-            ret.shape[1] = shape[0];
-            return ret;
+            return TYP<I, M>(TT<I, M>(this->cv::Mat::t(), Shape(shape[1], shape[0])));
         }
     }
 
-    Type_t repeat(int repeats) const
+    TYP<I, M> repeat(int repeats) const
     {
-        Type_t ret(This_t(cv::repeat(static_cast<const cv::Mat&>(*this), repeats, 1)));
-
         if constexpr (M == 1) {
-            ret.shape = Shape(shape[0] * repeats);
+            return TYP<I, M>(TT<I, M>(cv::repeat(*this, repeats, 1), Shape(shape[0] * repeats)));
         } else {
-            ret.shape = Shape(shape[0], shape[1] * repeats);
+            return TYP<I, M>(TT<I, M>(cv::repeat(*this, repeats, 1), Shape(shape[0], shape[1] * repeats)));
         }
-        return ret;
     }
 
     template <typename U>
@@ -219,38 +213,32 @@ public:
     {
         if constexpr (M == U::shape_size && M == 2) {
             if (shape[1] == op2.shape[0]) {
-                Type_t ret(This_t(static_cast<const cv::Mat&>(*this) * This_t(op2)));
-                ret.shape = Shape(shape[0], op2.shape[1]);
-                return ret;
+                return TYP<I, M>(TT<I, M>(static_cast<const cv::Mat&>(*this) * IMP<U>(op2), Shape(shape[0], op2.shape[1])));
             } else {
                 throw std::runtime_error("shape error in imp matmul");
             }
         } else if constexpr (U::shape_size == 1 && M == 2) {
-            auto new_op2 = static_cast<const cv::Mat&>(CVXarrayBaseImp<I, 1>(op2)).reshape(1, op2.shape[0]);
-            auto m = CVXarrayBaseImp<I, 1>(static_cast<const cv::Mat&>(*this) * new_op2);
-            XarrayBase<I, 1, CVXarrayBaseImp<I, 1>> ret(m);
-            ret.shape = Shape(shape[0]);
+            auto new_op2 = (TT<I, 1>(op2)).cv::Mat::reshape(1, op2.shape[0]);
+            auto m = TT<I, 1>(static_cast<const cv::Mat&>(*this) * new_op2, Shape(shape[0]));
+            TYP<I, 1> ret(m);
             return ret;
         } else if constexpr (U::shape_size == 2 && M == 1) {
-            auto new_this = static_cast<const cv::Mat&>(*this).reshape(1, 1);
-            Type_t ret(CVXarrayBaseImp<I, 1>(new_this * CVXarrayBaseImp<I, 2>(op2)));
-            ret.shape = Shape(op2.shape[1]);
-            return ret;
+            auto new_this = this->cv::Mat::reshape(1, 1);
+            return TYP<I, M>(TT<I, 1>(new_this * TT<I, 2>(op2), Shape(op2.shape[1])));
         } else {
             throw std::runtime_error("matmul not imp yet");
         }
     }
 
     template <typename U>
-    requires arithmetic<U> || std::derived_from<U, Type_t>
+    requires arithmetic<U> || XBaseType<U>
     auto dot(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
             return *this * op2;
         } else if constexpr (M == U::shape_size && M == 1) {
             if (shape == op2.shape) {
-                I ret = static_cast<const cv::Mat*>(this)->dot(This_t(op2));
-                return ret;
+                return this->cv::Mat::dot(IMP<U>(op2));
             } else {
                 throw std::runtime_error("shape error in dot");
             }
@@ -258,72 +246,47 @@ public:
         } else if constexpr (M == U::shape_size && M == 2) {
             return this->matmul(op2);
         } else {
-
             throw std::runtime_error("not impliment for dot");
         }
     }
 
     template <typename U>
-    requires std::derived_from<U, Type_t> Type_t vstack(const U& op2)
+    requires XBaseType<U> TYP<I, M> vstack(const U& op2)
     const
     {
         auto is_vector_same_column = (shape.size() == 2) && (op2.shape.size() == 2) && (shape[1] == shape[1]);
-
         if (is_vector_same_column) {
-
             cv::Mat _;
-
-            auto m1 = static_cast<const cv::Mat&>(*this);
-            auto m2 = static_cast<const cv::Mat&>(This_t(op2));
-
-            cv::vconcat(m1, m2, _);
-
-            Type_t ret { This_t(_) };
-            ret.shape = Shape(shape[0] + op2.shape[0], shape[1]);
-            return ret;
-
+            cv::vconcat(*this, IMP<U>(op2), _);
+            return TYP<I, M> { TT<I, M>(_, Shape(shape[0] + op2.shape[0], shape[1])) };
         } else {
             throw std::runtime_error("shape error in vstack");
         }
     }
 
     template <typename U>
-    requires std::derived_from<U, Type_t> Type_t hstack(const U& op2)
+    requires XBaseType<U> TYP<I, M> hstack(const U& op2)
     const
     {
         auto is_vector_same_row = (shape.size() == 2) && (op2.shape.size() == 2) && (shape[0] == shape[0]);
-        // auto is_vector_1d = (shape.size() == 1) && (op2.shape.size() == 1) && (shape == op2.shape);
         if (is_vector_same_row) {
-
             cv::Mat _;
-
-            auto m1 = static_cast<const cv::Mat&>(*this);
-            auto m2 = static_cast<const cv::Mat&>(This_t(op2));
-
-            cv::hconcat(m1, m2, _);
-
-            Type_t ret { This_t(_) };
-            ret.shape = Shape(shape[0], op2.shape[1] + shape[1]);
-            return ret;
-
+            cv::hconcat(*this, IMP<U>(op2), _);
+            return TYP<I, M> { TT<I, M>(_, Shape(shape[0], op2.shape[1] + shape[1])) };
         } else {
             throw std::runtime_error("shape error in hstack");
         }
     }
 
     template <typename U>
-    requires arithmetic<U> || std::derived_from<U, Type_t>
+    requires arithmetic<U> || XBaseType<U>
     auto operator<(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
-            Type_t ret(CVXarrayBaseImp<bool, M>(static_cast<const cv::Mat&>(*this) < op2));
-            ret.shape = shape;
-            return ret;
-        } else if constexpr (std::derived_from<U, Type_t>) {
+            return TYP<I, M>(TT<bool, M>(static_cast<const cv::Mat&>(*this) < op2, shape));
+        } else if constexpr (std::derived_from<U, TYP<I, M>>) {
             if (shape == op2.shape) {
-                Type_t ret(CVXarrayBaseImp<bool, M>(static_cast<const cv::Mat&>(*this) < op2));
-                ret.shape = shape;
-                return ret;
+                return TYP<I, M>(TT<bool, M>(static_cast<const cv::Mat&>(*this) < IMP<U>(op2), shape));
             } else {
                 throw std::runtime_error("shape error in <");
             }
@@ -331,18 +294,14 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || std::derived_from<U, Type_t>
+    requires arithmetic<U> || XBaseType<U>
     auto operator==(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
-            Type_t ret(CVXarrayBaseImp<bool, M>(static_cast<const cv::Mat&>(*this) == op2));
-            ret.shape = shape;
-            return ret;
-        } else if constexpr (std::derived_from<U, Type_t>) {
+            return TYP<I, M>(TT<bool, M>(static_cast<const cv::Mat&>(*this) == op2, shape));
+        } else if constexpr (std::derived_from<U, TYP<I, M>>) {
             if (shape == op2.shape) {
-                XarrayBase<bool, M, CVXarrayBaseImp<bool, M>> ret(CVXarrayBaseImp<bool, M>(static_cast<const cv::Mat&>(*this) == This_t(op2)));
-                ret.shape = shape;
-                return ret;
+                return TYP<bool, M>(TT<bool, M>(static_cast<const cv::Mat&>(*this) == IMP<U>(op2), shape));
             } else {
                 throw std::runtime_error("shape error in <");
             }
@@ -350,17 +309,14 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || std::derived_from<U, Type_t> Type_t operator*(const U& op2) const
+    requires arithmetic<U> || XBaseType<U> TYP<I, M>
+    operator*(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
-            Type_t ret(This_t(static_cast<const cv::Mat&>(*this) * op2));
-            ret.shape = shape;
-            return ret;
-        } else if constexpr (std::derived_from<U, Type_t>) {
+            return TYP<I, M>(TT<I, M>(static_cast<const cv::Mat&>(*this) * op2, shape));
+        } else if constexpr (std::derived_from<U, TYP<I, M>>) {
             if (shape == op2.shape) {
-                Type_t ret(This_t(this->mul(This_t(op2))));
-                ret.shape = shape;
-                return ret;
+                return TYP<I, M>(TT<I, M>(this->mul(IMP<U>(op2)), shape));
             } else {
                 throw std::runtime_error("shape error in imp *");
             }
@@ -368,17 +324,14 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || std::derived_from<U, Type_t> Type_t operator/(const U& op2) const
+    requires arithmetic<U> || XBaseType<U> TYP<I, M>
+    operator/(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
-            Type_t ret(This_t(static_cast<const cv::Mat&>(*this) / op2));
-            ret.shape = shape;
-            return ret;
-        } else if constexpr (std::derived_from<U, Type_t>) {
+            return TYP<I, M>(TT<I, M>(static_cast<const cv::Mat&>(*this) / op2, shape));
+        } else if constexpr (std::derived_from<U, TYP<I, M>>) {
             if (shape == op2.shape) {
-                Type_t ret(This_t(static_cast<const cv::Mat&>(*this) / This_t(op2)));
-                ret.shape = shape;
-                return ret;
+                return TYP<I, M>(TT<I, M>(static_cast<const cv::Mat&>(*this) / IMP<U>(op2), shape));
             } else {
                 throw std::runtime_error("shape error in imp /");
             }
@@ -386,17 +339,14 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U> Type_t operator+(const U& op2) const
+    requires arithmetic<U> || XBaseType<U> TYP<I, M>
+    operator+(const U& op2) const
     {
         if constexpr (arithmetic<U>) {
-            Type_t ret(This_t(static_cast<const cv::Mat&>(*this) + op2));
-            ret.shape = shape;
-            return ret;
+            return TYP<I, M>(TT<I, M>(static_cast<const cv::Mat&>(*this) + op2, shape));
         } else if constexpr (XBaseType<U>) {
             if (shape == op2.shape) {
-                Type_t ret(This_t(static_cast<const cv::Mat&>(*this) + This_t(op2)));
-                ret.shape = shape;
-                return ret;
+                return TYP<I, M>(TT<I, M>(static_cast<const cv::Mat&>(*this) + IMP<U>(op2), shape));
             } else {
                 std::cout << shape << ", " << op2.shape << std::endl;
                 throw std::runtime_error("shape error in imp +");
@@ -405,42 +355,23 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U> Type_t operator-(const U& op2) const
+    requires arithmetic<U> || XBaseType<U> TYP<I, M>
+    operator-(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
-            Type_t ret(This_t(static_cast<const cv::Mat&>(*this) - op2));
-            ret.shape = shape;
-            return ret;
+            return TYP<I, M>(TT<I, M>(static_cast<const cv::Mat&>(*this) - op2, shape));
         } else if constexpr (XBaseType<U>) {
             if (shape == op2.shape) {
-                auto op = CVXarrayBaseImp<typename U::value_type, U::shape_size>(op2);
-                Type_t ret(This_t(static_cast<const cv::Mat&>(*this) - op));
-                ret.shape = shape;
-                return ret;
+                return TYP<I, M>(TT<I, M>(static_cast<const cv::Mat&>(*this) - IMP<U>(op2), shape));
             } else if ((shape.total() % op2.shape.total()) == 0) {
                 auto times = shape.total() / op2.shape.total();
-                auto _op = CVXarrayBaseImp<typename U::value_type, U::shape_size>(op2);
-
-                auto op = cv::repeat(static_cast<const cv::Mat&>(_op), times, 1);
+                auto op = cv::repeat(static_cast<const cv::Mat&>(IMP<U>(op2)), times, 1);
                 auto [r, _] = get_rc(shape);
 
-                Type_t ret(This_t(static_cast<const cv::Mat&>(*this) - op.reshape(1, r)));
-                ret.shape = shape;
-                return ret;
+                return TYP<I, M>(TT<I, M>(static_cast<const cv::Mat&>(*this) - op.reshape(1, r), shape));
 
             } else if ((op2.shape.total() % shape.total()) == 0) {
-
-                // auto times = op2.shape.total() / shape.total();
-
-                // auto op = cv::repeat(static_cast<const cv::Mat&>(*this), times, 1);
-                // auto [r, _] = get_rc(op2.shape);
-
-                // auto _op2 = CVXarrayBaseImp<typename U::value_type, U::shape_size>(op2);
-                // Type_t ret(CVXarrayBaseImp<typename U::value_type, U::shape_size>(op.reshape(1, r) - _op2));
-                // ret.shape = op2.shape;
-                // return ret;
                 throw std::runtime_error("shape error in imp -");
-
             } else {
                 throw std::runtime_error("shape error in imp -");
             }
@@ -448,14 +379,14 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || std::derived_from<U, Type_t>
+    requires arithmetic<U> || XBaseType<U>
     void operator+=(const U& op2)
     {
         if constexpr (std::is_arithmetic_v<U>) {
             static_cast<cv::Mat&>(*this) += op2;
-        } else if constexpr (std::derived_from<U, Type_t>) {
+        } else if constexpr (std::derived_from<U, TYP<I, M>>) {
             if (shape == op2.shape) {
-                static_cast<cv::Mat&>(*this) += This_t(op2);
+                static_cast<cv::Mat&>(*this) += IMP<U>(op2);
             } else {
                 throw std::runtime_error("shape error in imp +=");
             }
@@ -463,14 +394,14 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || std::derived_from<U, Type_t>
+    requires arithmetic<U> || XBaseType<U>
     void operator-=(const U& op2)
     {
         if constexpr (std::is_arithmetic_v<U>) {
             static_cast<cv::Mat&>(*this) -= op2;
-        } else if constexpr (std::derived_from<U, Type_t>) {
+        } else if constexpr (std::derived_from<U, TYP<I, M>>) {
             if (shape == op2.shape) {
-                static_cast<cv::Mat&>(*this) -= This_t(op2);
+                static_cast<cv::Mat&>(*this) -= IMP<U>(op2);
             } else {
                 throw std::runtime_error("shape error in imp -=");
             }
@@ -479,67 +410,48 @@ public:
 
     I norm() const
     {
-        return cv::norm(static_cast<const cv::Mat&>(*this));
+        return cv::norm(*this);
     }
 
-    Type_t exp() const
+    TYP<I, M> exp() const
     {
         cv::Mat _;
-        const auto& self = static_cast<const cv::Mat&>(*this);
-        cv::exp(self, _);
+        cv::exp(*this, _);
 
-        Type_t ret { This_t(_) };
+        TYP<I, M> ret { TT<I, M>(_) };
         ret.shape = shape;
 
         return ret;
     }
 
     template <typename D>
-    Type_t power(D power) const
+    TYP<I, M> power(D power) const
     {
         cv::Mat _;
-        const auto& self = static_cast<const cv::Mat&>(*this);
-        cv::pow(self, power, _);
+        cv::pow(*this, power, _);
 
-        Type_t ret { This_t(_) };
-        ret.shape = shape;
-
-        return ret;
+        return TYP<I, M> { TT<I, M>(_, shape) };
     }
 
-    Type_t sqrt() const
+    TYP<I, M> sqrt() const
     {
         cv::Mat _;
-        const auto& self = static_cast<const cv::Mat&>(*this);
-        cv::sqrt(self, _);
-
-        Type_t ret { This_t(_) };
-        ret.shape = shape;
-
-        return ret;
+        cv::sqrt(*this, _);
+        return TYP<I, M> { TT<I, M>(_, shape) };
     }
 
     I sum() const
     {
-        const auto& self = static_cast<const cv::Mat&>(*this);
-        return cv::sum(self)[0];
+        return cv::sum(*this)[0];
     }
 
     template <typename U>
-    requires arithmetic<U> || std::derived_from<U, Type_t>
-        Type_t solve(const U& op2)
+    requires arithmetic<U> || XBaseType<U> TYP<I, M> solve(const U& op2)
     const
     {
         cv::Mat _;
-        const auto& m1 = static_cast<const cv::Mat&>(*this);
-        const auto& m2 = static_cast<const cv::Mat&>(This_t(op2));
-
-        cv::solve(m1, m2, _, cv::DECOMP_SVD);
-
-        Type_t ret { This_t(_) };
-        ret.shape = Shape(shape[1], 1);
-
-        return ret;
+        cv::solve(*this, IMP<U>(op2), _, cv::DECOMP_SVD);
+        return TYP<I, M> { TT<I, M>(_, Shape(shape[1], 1)) };
     }
 
 private:
