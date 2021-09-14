@@ -21,10 +21,13 @@ TEST_CASE("xarray")
     REQUIRE(all(tt1));
 
     auto x3 = x1 * 2;
-    REQUIRE(isclose(x3, Xarray({ 2.2, 4.0 })));
+    REQUIRE(isclose(x3, Xarray({ 2.0, 4.0 })));
     REQUIRE(isclose(2 * x1, x3));
+    REQUIRE(isclose(x1 * x1, Xarray({ 1.0, 4.0 })));
 
-    auto x4 = x1 * x1;
+    REQUIRE(isclose(x1 / 2, Xarray({ 0.5, 1.0 })));
+    REQUIRE(isclose(2 / x1, Xarray({ 2.0, 1.0 })));
+    REQUIRE(isclose(x1 / x1, Xarray({ 1.0, 1.0 })));
 
     REQUIRE(x1.dot(x2) == 5);
     REQUIRE(x2.dot(x1) == 5);
@@ -72,4 +75,10 @@ TEST_CASE("xarray")
     REQUIRE(all(Xarray({ 1, 1, 1 }) + xm1 == Xarray({ { 2, 3, 4 }, { 5, 6, 7 } })));
 
     REQUIRE(all(repeat(x1, 2) == Xarray({ 1.0, 2.0, 1.0, 2.0 })));
+
+    auto xm2 = Xarray<double, 2>({ { 1, 2, 3 }, { 3, 2, 1 } });
+
+    REQUIRE(mean(xm2) == 2.0);
+    REQUIRE(all(mean(xm2, 0) == Xarray({ 2.0, 2.0, 2.0 })));
+    REQUIRE(all(mean(xm2, 1) == Xarray({ 2.0, 2.0 })));
 }

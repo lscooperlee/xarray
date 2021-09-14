@@ -47,11 +47,11 @@ public:
 
     constexpr int operator[](int idx) const
     {
-        return dim[idx];
+        return dim[idx >= 0 ? idx : N + idx];
     }
     constexpr int& operator[](int idx)
     {
-        return dim[idx];
+        return dim[idx >= 0 ? idx : N + idx];
     }
 
     template <int M>
@@ -112,7 +112,6 @@ public:
 template <int... N>
 class _Shape {
 public:
-
     constexpr int operator[](int idx) const
     {
         return dim[idx];
@@ -143,9 +142,8 @@ public:
         return sizeof...(N);
     }
 
-    static constexpr std::array<int, sizeof...(N)> dim = {N...};
+    static constexpr std::array<int, sizeof...(N)> dim = { N... };
 };
-
 
 template <int... N>
 std::ostream& operator<<(std::ostream& stream, const _Shape<N...>& s)

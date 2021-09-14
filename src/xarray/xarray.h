@@ -26,6 +26,11 @@ public:
     {
     }
 
+    Xarray(Shape<N> shape, const std::initializer_list<A>& data_)
+        : XarrayBase<A, N>(shape, data_)
+    {
+    }
+
     template <template <typename> typename C>
     Xarray(Shape<N> shape, const C<A>& container)
         : XarrayBase<A, N>(shape, container)

@@ -151,7 +151,8 @@ public:
     bool isclose(const U& op1) const
     {
         auto tmp = static_cast<const cv::Mat&>(*this) - IMP<U>(op1);
-        return TT<I, M>(tmp < 0.00001).all();
+        // TODO: threshold as parameter
+        return TT<I, M>(cv::abs(tmp) < 0.1).all();
     }
 
     I det() const
@@ -386,14 +387,14 @@ public:
 
             if (shape == op2.shape) {
                 return TYP<I, SZ>(TT<I, SZ>(static_cast<const cv::Mat&>(*this) - IMP<U>(op2), new_shape));
-            } else if ((shape.total() % op2.shape.total()) == 0) {
+            } else if (shape[-1] == op2.shape[0] && (shape.total() % op2.shape.total()) == 0) {
                 auto times = shape.total() / op2.shape.total();
                 auto op = cv::repeat(static_cast<const cv::Mat&>(IMP<U>(op2)), times, 1);
                 auto [r, _] = get_rc(shape);
 
                 return TYP<I, SZ>(TT<I, SZ>(static_cast<const cv::Mat&>(*this) - op.reshape(1, r), new_shape));
 
-            } else if ((op2.shape.total() % shape.total()) == 0) {
+            } else if (op2.shape[-1] == shape[0] && (op2.shape.total() % shape.total()) == 0) {
                 auto times = op2.shape.total() / shape.total();
                 auto op = cv::repeat(*this, times, 1);
                 auto [r, _] = get_rc(op2.shape);
@@ -472,6 +473,30 @@ public:
         return cv::sum(*this)[0];
     }
 
+    template <typename AXIS = void*>
+    auto mean(AXIS axis = {}) const
+    {
+        if constexpr (std::is_integral_v<AXIS> && M > 1) {
+            cv::Mat _;
+            cv::reduce(*this, _, axis, cv::REDUCE_AVG);
+            Shape<M - 1> new_shape;
+            if (axis == 0) {
+                new_shape = Shape(shape[1]);
+            } else if (axis == 1) {
+                new_shape = Shape(shape[0]);
+            } else {
+                throw std::runtime_error("axis not supported");
+            }
+            return TYP<I, M - 1> { TT<I, M - 1>(_, new_shape) };
+        } else {
+            if (axis == AXIS {}) {
+                return cv::sum(*this)[0] / shape.total();
+            } else {
+                throw std::runtime_error("axis not supported");
+            }
+        }
+    }
+
     template <typename U>
     requires arithmetic<U> || XBaseType<U> TYP<I, M> solve(const U& op2)
     const
@@ -481,9 +506,15 @@ public:
         return TYP<I, M> { TT<I, M>(_, Shape(shape[1], 1)) };
     }
 
-private:
     Shape<M> shape = {};
 };
+
+template <typename U, typename I, int M>
+requires arithmetic<U>
+auto operator/(const U& op1, const CVXarrayBaseImp<I, M>& op2)
+{
+    return XarrayBase<I, M, CVXarrayBaseImp<I, M>>(CVXarrayBaseImp<I, M>(op1 / static_cast<const cv::Mat&>(op2), op2.shape));
+}
 
 template <typename I>
 struct CVXarrayBaseImp<I, 0> {

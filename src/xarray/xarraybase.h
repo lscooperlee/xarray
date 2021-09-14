@@ -143,20 +143,6 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U> This_t
-    operator*(const U& op2) const
-    {
-        return I(*this) * op2;
-    }
-
-    template <typename U>
-    requires arithmetic<U> || XBaseType<U> This_t
-    operator/(const U& op2) const
-    {
-        return I(*this) / op2;
-    }
-
-    template <typename U>
     requires arithmetic<U> || XBaseType<U>
     auto operator-(const U& op2) const
     {
@@ -235,10 +221,30 @@ std::ostream& operator<<(std::ostream& stream, const XarrayBase<A, N, I>& x)
     return stream;
 }
 
-template <arithmetic U, typename A, int N, typename I>
-XarrayBase<A, N, I> operator*(const U& op2, const XarrayBase<A, N, I>& op1)
+template <typename U, typename A, int N, typename I>
+requires arithmetic<U> || XBaseType<U>
+auto operator*(const XarrayBase<A, N, I>& op1, const U& op2)
 {
-    return op1 * op2;
+    return I(op1) * op2;
+}
+
+template <arithmetic U, typename A, int N, typename I>
+auto operator*(const U& op2, const XarrayBase<A, N, I>& op1)
+{
+    return I(op1) * op2;
+}
+
+template <typename U, typename A, int N, typename I>
+requires arithmetic<U> || XBaseType<U>
+auto operator/(const XarrayBase<A, N, I>& op1, const U& op2)
+{
+    return I(op1) / op2;
+}
+
+template <arithmetic U, typename A, int N, typename I>
+auto operator/(const U& op2, const XarrayBase<A, N, I>& op1)
+{
+    return op2 / I(op1);
 }
 
 template <typename A, int N, typename I>
@@ -329,6 +335,12 @@ template <typename A, int N, typename I>
 A sum(const XarrayBase<A, N, I>& op1)
 {
     return I(op1).sum();
+}
+
+template <typename A, int N, typename I, typename AXIS = void*>
+auto mean(const XarrayBase<A, N, I>& op1, AXIS axis = {})
+{
+    return I(op1).mean(axis);
 }
 
 template <typename A, int N, typename I>
