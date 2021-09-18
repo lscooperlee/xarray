@@ -22,6 +22,9 @@ template <typename A, int N, typename I>
 class XarrayBase;
 
 template <typename I, int M>
+requires(M > 0) class CVXarrayBaseImp;
+
+template <typename I, int M>
 requires(M > 0) class CVXarrayBaseImp : public cv::Mat {
 
     template <typename A, int N>
@@ -303,17 +306,34 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U> TYP<I, M>
-    operator*(const U& op2) const
+    requires arithmetic<U> || XBaseType<U>
+    auto operator*(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
             return TYP<I, M>(TT<I, M>(static_cast<const cv::Mat&>(*this) * op2, shape));
-        } else if constexpr (std::derived_from<U, TYP<I, M>>) {
+        } else if constexpr (M == U::shape_size) {
             if (shape == op2.shape) {
                 return TYP<I, M>(TT<I, M>(this->mul(IMP<U>(op2)), shape));
             } else {
                 throw std::runtime_error("shape error in imp *");
             }
+        } else if constexpr (U::shape_size == 1 && M == 2) {
+            if (shape[1] == op2.shape[0] && op2.shape.size() == 1) {
+                auto op = cv::repeat(static_cast<const cv::Mat&>(IMP<U>(op2)), shape[0], 1);
+                return TYP<I, M>(TT<I, M>(op.mul(*this), shape));
+            }else{
+                throw std::runtime_error("shape error in imp *");
+            }
+        } else if constexpr (U::shape_size == 2 && M == 1) {
+            if (op2.shape[1] == shape[0] && shape.size() == 1) {
+                auto op = cv::repeat(*this, op2.shape[0], 1);
+                return TYP<I, U::shape_size>(TT<I, U::shape_size>(op.mul(IMP<U>(op2)), op2.shape));
+            }
+            else{
+                throw std::runtime_error("shape error in imp *");
+            }
+        } else {
+            throw std::runtime_error("shape error in imp *");
         }
     }
 
@@ -522,6 +542,5 @@ struct CVXarrayBaseImp<I, 0> {
     CVXarrayBaseImp(I v)
         : value(v) {};
 };
-
 }
 #endif

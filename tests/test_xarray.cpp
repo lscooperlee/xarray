@@ -25,6 +25,11 @@ TEST_CASE("xarray")
     REQUIRE(isclose(2 * x1, x3));
     REQUIRE(isclose(x1 * x1, Xarray({ 1.0, 4.0 })));
 
+    auto x4 = Xarray({ { 1.0, 2.0, 3.0 }, { 3.0, 2.0, 1.0 } });
+    auto xe = Xarray({ 2.0, 1.0, 0.0 });
+    REQUIRE(isclose(xe * x4, Xarray<double, 2>({ { 2, 2, 0 }, { 6, 2, 0 } })));
+    REQUIRE(isclose(xe * x4, x4 * xe));
+
     REQUIRE(isclose(x1 / 2, Xarray({ 0.5, 1.0 })));
     REQUIRE(isclose(2 / x1, Xarray({ 2.0, 1.0 })));
     REQUIRE(isclose(x1 / x1, Xarray({ 1.0, 1.0 })));
