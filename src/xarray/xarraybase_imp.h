@@ -280,7 +280,7 @@ public:
     auto operator<(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
-            return TYP<I, M>(TT<bool, M>(static_cast<const cv::Mat&>(*this) < op2, shape));
+            return TYP<bool, M>(TT<bool, M>(static_cast<const cv::Mat&>(*this) < op2, shape));
         } else if constexpr (std::derived_from<U, TYP<I, M>>) {
             if (shape == op2.shape) {
                 return TYP<I, M>(TT<bool, M>(static_cast<const cv::Mat&>(*this) < IMP<U>(op2), shape));
@@ -295,12 +295,12 @@ public:
     auto operator==(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
-            return TYP<I, M>(TT<bool, M>(static_cast<const cv::Mat&>(*this) == op2, shape));
+            return TYP<bool, M>(TT<bool, M>(static_cast<const cv::Mat&>(*this) == op2, shape));
         } else if constexpr (std::derived_from<U, TYP<I, M>>) {
             if (shape == op2.shape) {
                 return TYP<bool, M>(TT<bool, M>(static_cast<const cv::Mat&>(*this) == IMP<U>(op2), shape));
             } else {
-                throw std::runtime_error("shape error in <");
+                throw std::runtime_error("shape error in ==");
             }
         }
     }
@@ -387,6 +387,11 @@ public:
                 throw std::runtime_error("shape error in imp +");
             }
         }
+    }
+
+    auto operator-() const
+    {
+        return TYP<I, M>(TT<I, M>(-static_cast<const cv::Mat&>(*this), shape));
     }
 
     template <typename U>

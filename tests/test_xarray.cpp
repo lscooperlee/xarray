@@ -57,6 +57,9 @@ TEST_CASE("xarray")
 
     REQUIRE(isclose(x32.T(), Xarray({ { 0.1, 0.3, 0.5 }, { 0.2, 0.4, 0.6 } })));
 
+    REQUIRE(all(x32 < 10));
+
+    REQUIRE(all(-x32 == Xarray { { -0.1, -0.2 }, { -0.3, -0.4 }, { -0.5, -0.6 } }));
     REQUIRE(all((x1 + x2 - x3) == Xarray<double, 1>({ 0, 0 })));
     REQUIRE(all(x2 / 2 == Xarray({ 0.5, 1.0 })));
     REQUIRE(all(x2 / x3 == Xarray({ 0.5, 0.5 })));
