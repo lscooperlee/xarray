@@ -477,6 +477,14 @@ public:
         return ret;
     }
 
+    TYP<I, M> abs() const
+    {
+        TYP<I, M> ret { TT<I, M>(cv::abs(*this)) };
+        ret.shape = shape;
+
+        return ret;
+    }
+
     template <typename D>
     TYP<I, M> power(D power) const
     {

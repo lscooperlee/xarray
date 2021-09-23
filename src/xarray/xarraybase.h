@@ -333,6 +333,12 @@ XarrayBase<A, N, I> exp(const XarrayBase<A, N, I>& op1)
     return I(op1).exp();
 }
 
+template <typename A, int N, typename I>
+XarrayBase<A, N, I> abs(const XarrayBase<A, N, I>& op1)
+{
+    return I(op1).abs();
+}
+
 template <typename D, typename A, int N, typename I>
 XarrayBase<A, N, I> power(const XarrayBase<A, N, I>& op1, D power)
 {
