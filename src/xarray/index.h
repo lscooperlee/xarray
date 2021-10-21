@@ -3,11 +3,12 @@
 
 #include <algorithm>
 #include <array>
-#include <concepts>
 #include <initializer_list>
 #include <limits>
 #include <tuple>
 #include <type_traits>
+
+#include "xarray/common.h"
 
 namespace xa {
 
@@ -54,26 +55,25 @@ public:
         }
     }
 
-
 private:
     std::array<int, N> value = {};
 };
 
-template <int K, int... M>
-static constexpr bool all_not_one()
-{
-    if constexpr (sizeof...(M) == 0) {
-        return K == 1;
-    } else {
-        return !(all_not_one<M...>() && (K == 1));
-    }
-}
-
 template <int... N>
-class Index {
+requires(sizeof...(N) >= 1) class Index {
+
+    template <int K, int... M>
+    static constexpr bool all_are_one()
+    {
+        if constexpr (sizeof...(M) == 0) {
+            return K == 1;
+        } else {
+            return (all_are_one<M...>() && (K == 1));
+        }
+    }
 
 public:
-    constexpr Index(const int (&... n)[N]) noexcept requires(all_not_one<N...>())
+    constexpr Index(const int (&... n)[N]) noexcept requires(!all_are_one<N...>())
         : data(n...) {};
 
     constexpr Index(int a) noexcept

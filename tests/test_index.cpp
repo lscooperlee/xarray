@@ -30,4 +30,7 @@ TEST_CASE("index")
     auto m1 = t[Index({ -1 }, { 0, 4, 2 })];
     auto c2 = t[Index({ 1 }, { 0, 4, 2 })];
     REQUIRE(isclose(m1, c2));
+
+    Xarray t1d = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 };
+    t1d[Index({1, 2})];
 }

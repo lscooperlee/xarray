@@ -5,7 +5,7 @@
 #include <iostream>
 #include <memory>
 #include <random>
-#include <span>
+//#include <span>
 #include <tuple>
 #include <type_traits>
 #include <vector>
@@ -129,7 +129,7 @@ public:
     }
 
     template <typename U>
-    requires XBaseType<U>
+    requires(XBaseType<U>)
     CVXarrayBaseImp(const U& x)
         : shape(x.shape)
     {
@@ -228,7 +228,7 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U>
+    requires(arithmetic<U> || XBaseType<U>)
     auto dot(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
@@ -248,7 +248,7 @@ public:
     }
 
     template <typename U>
-    requires XBaseType<U> TYP<I, M> vstack(const U& op2)
+    requires(XBaseType<U>) TYP<I, M> vstack(const U& op2)
     const
     {
         auto is_vector_same_column = (shape.size() == 2) && (op2.shape.size() == 2) && (shape[1] == shape[1]);
@@ -262,7 +262,7 @@ public:
     }
 
     template <typename U>
-    requires XBaseType<U> TYP<I, M> hstack(const U& op2)
+    requires(XBaseType<U>) TYP<I, M> hstack(const U& op2)
     const
     {
         auto is_vector_same_row = (shape.size() == 2) && (op2.shape.size() == 2) && (shape[0] == shape[0]);
@@ -276,7 +276,7 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U>
+    requires(arithmetic<U> || XBaseType<U>)
     auto operator<(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
@@ -291,7 +291,7 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U>
+    requires(arithmetic<U> || XBaseType<U>)
     auto operator==(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
@@ -306,7 +306,7 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U>
+    requires(arithmetic<U> || XBaseType<U>)
     auto operator*(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
@@ -338,7 +338,7 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U> TYP<I, M>
+    requires(arithmetic<U> || XBaseType<U>) TYP<I, M>
     operator/(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
@@ -353,7 +353,7 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U>
+    requires(arithmetic<U> || XBaseType<U>)
     auto operator+(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
@@ -395,7 +395,7 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U>
+    requires(arithmetic<U> || XBaseType<U>)
     auto operator-(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
@@ -432,7 +432,7 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U>
+    requires(arithmetic<U> || XBaseType<U>)
     void operator+=(const U& op2)
     {
         if constexpr (std::is_arithmetic_v<U>) {
@@ -447,7 +447,7 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U>
+    requires(arithmetic<U> || XBaseType<U>)
     void operator-=(const U& op2)
     {
         if constexpr (std::is_arithmetic_v<U>) {
@@ -531,7 +531,7 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U> TYP<I, M> solve(const U& op2)
+    requires(arithmetic<U> || XBaseType<U>) TYP<I, M> solve(const U& op2)
     const
     {
         cv::Mat _;

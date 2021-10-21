@@ -52,6 +52,12 @@ public:
     {
     }
 
+    XBase(const Shape<N>& shape_)
+        : shape(shape_)
+        , data_storage(shape.total(), A{})
+    {
+    }
+
     const auto* raw() const
     {
         return this->data_storage.data();
@@ -105,6 +111,11 @@ public:
         }
     }
 
+    auto operator[](int idx) const
+    {
+        return (*this)[Index(idx)];
+    }
+
     A item(const int idx = 0) const
     {
         return this->data_storage[idx];
@@ -127,7 +138,7 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U>
+    requires(arithmetic<U> || XBaseType<U>)
     auto dot(const U& op2)
         const
     {
@@ -135,7 +146,7 @@ public:
     }
 
     template <typename U>
-    requires XBaseType<U>
+    requires(XBaseType<U>)
     auto matmul(const U& op2)
         const
     {
@@ -143,21 +154,21 @@ public:
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U>
+    requires(arithmetic<U> || XBaseType<U>)
     auto operator+(const U& op2) const
     {
         return I(*this) + op2;
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U> This_t& operator+=(const U& op2)
+    requires(arithmetic<U> || XBaseType<U>) This_t& operator+=(const U& op2)
     {
         I(*this) += op2;
         return *this;
     }
 
     template <typename U>
-    requires arithmetic<U> || XBaseType<U> This_t& operator-=(const U& op2)
+    requires(arithmetic<U> || XBaseType<U>) This_t& operator-=(const U& op2)
     {
         I(*this) -= op2;
         return *this;
@@ -215,7 +226,7 @@ auto operator-(const XarrayBase<A, N, I>& op1)
 }
 
 template <typename U, typename A, int N, typename I>
-requires arithmetic<U> || XBaseType<U>
+requires(arithmetic<U> || XBaseType<U>)
 auto operator-(const XarrayBase<A, N, I>& op1, const U& op2)
 {
     return I(op1) - op2;
@@ -228,7 +239,7 @@ auto operator-(const U& op2, const XarrayBase<A, N, I>& op1)
 }
 
 template <typename U, typename A, int N, typename I>
-requires arithmetic<U> || XBaseType<U>
+requires(arithmetic<U> || XBaseType<U>)
 auto operator*(const XarrayBase<A, N, I>& op1, const U& op2)
 {
     return I(op1) * op2;
@@ -241,27 +252,28 @@ auto operator*(const U& op2, const XarrayBase<A, N, I>& op1)
 }
 
 template <typename U, typename A, int N, typename I>
-requires arithmetic<U> || XBaseType<U>
+requires(arithmetic<U> || XBaseType<U>)
 auto operator/(const XarrayBase<A, N, I>& op1, const U& op2)
 {
     return I(op1) / op2;
 }
 
-template <arithmetic U, typename A, int N, typename I>
+template <typename U, typename A, int N, typename I>
+requires(arithmetic<U>)
 auto operator/(const U& op2, const XarrayBase<A, N, I>& op1)
 {
     return op2 / I(op1);
 }
 
 template <typename U, typename A, int N, typename I>
-requires arithmetic<U> || XBaseType<U>
+requires(arithmetic<U> || XBaseType<U>)
 auto operator==(const XarrayBase<A, N, I>& op1, const U& op2)
 {
     return I(op1) == op2;
 }
 
 template <typename U, typename A, int N, typename I>
-requires arithmetic<U> || XBaseType<U>
+requires(arithmetic<U> || XBaseType<U>)
 auto operator<(const XarrayBase<A, N, I>& op1, const U& op2)
 {
     return I(op1) < op2;

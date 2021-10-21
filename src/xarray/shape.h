@@ -6,7 +6,6 @@
 #include <iostream>
 #include <memory>
 #include <numeric>
-#include <span>
 #include <tuple>
 #include <type_traits>
 #include <vector>
@@ -14,6 +13,7 @@
 #include <opencv2/core.hpp>
 
 #include "xarray/common.h"
+
 
 namespace xa {
 
@@ -55,7 +55,7 @@ public:
     }
 
     template <int M>
-    constexpr bool operator==(Shape<M> shape) const
+    constexpr bool operator==(Shape<M> shape [[maybe_unused]]) const
     {
         if constexpr (M != N) {
             return false;
