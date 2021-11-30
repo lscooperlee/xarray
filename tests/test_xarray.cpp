@@ -1,3 +1,4 @@
+#include "xarray/common.h"
 #include "xarray/shape.h"
 #include "xarray/xarray.h"
 #include <iostream>
@@ -10,6 +11,9 @@ using namespace xa;
 
 TEST_CASE("xarray")
 {
+
+    static_assert(XBaseType<Xarray<int, 2>>);
+
     auto x1 = Xarray({ 1.0, 2.0 });
     auto x2 = Xarray({ 1.0, 2.0 });
     REQUIRE(x1.shape[0] == 2);
@@ -92,4 +96,8 @@ TEST_CASE("xarray")
     REQUIRE(all(mean(xm2, 1) == Xarray({ 2.0, 2.0 })));
 
     REQUIRE(all(abs(-xm2) == xm2));
+
+    auto xchar = Xarray<char, 2>({ { 1, 2 }, { 3, 4 } });
+
+    REQUIRE(all(Xarray<int, 2>({ { 1, 2 }, { 3, 4 } }) == xchar.astype<int>()));
 }

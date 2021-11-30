@@ -59,9 +59,7 @@ private:
     std::array<int, N> value = {};
 };
 
-template <int... N>
-requires(sizeof...(N) >= 1) class Index {
-
+namespace {
     template <int K, int... M>
     static constexpr bool all_are_one()
     {
@@ -71,6 +69,11 @@ requires(sizeof...(N) >= 1) class Index {
             return (all_are_one<M...>() && (K == 1));
         }
     }
+
+}
+
+template <int... N>
+requires(sizeof...(N) >= 1) class Index {
 
 public:
     constexpr Index(const int (&... n)[N]) noexcept requires(!all_are_one<N...>())

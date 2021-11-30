@@ -5,7 +5,6 @@
 #include <iostream>
 #include <memory>
 #include <random>
-//#include <span>
 #include <tuple>
 #include <type_traits>
 #include <vector>
@@ -13,7 +12,6 @@
 #include <opencv2/core.hpp>
 
 #include "xarray/common.h"
-#include "xarray/data_storage.h"
 #include "xarray/shape.h"
 
 namespace xa {

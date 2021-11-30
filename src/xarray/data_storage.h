@@ -43,6 +43,13 @@ public:
     {
     }
 
+    template <typename U>
+    DataStorage(const DataStorage<U>& u)
+        : idata(std::make_shared<InternalData<T>>(u.size()))
+    {
+        std::copy(u.idata->begin(), u.idata->end(), idata->begin());
+    }
+
     DataStorage()
         : idata(std::make_shared<InternalData<T>>())
     {
@@ -78,6 +85,15 @@ public:
     {
         return (*idata).size();
     }
+
+    // template <typename U>
+    // DataStorage<T> as_type(const DataStorage<U, K...>& storage) const
+    // {
+    //     auto new_idata = std::make_shared<InternalData<U>>(storage.size());
+    //     std::copy(idata->begin(), idata->end(), new_idata->begin());
+
+    //     DataStorage
+    // }
 
     template <int K, int... M>
     DataStorage<T> copy(const Index<M...>& index, Shape<K> shape) const

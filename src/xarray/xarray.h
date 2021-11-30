@@ -42,6 +42,7 @@ public:
     {
         return static_cast<const XarrayBase<A, N>&>(*this) == op2;
     }
+
 };
 
 template <typename A>
@@ -49,6 +50,12 @@ Xarray(const std::initializer_list<std::initializer_list<A>>& data_) -> Xarray<A
 
 template <typename A>
 Xarray(const std::initializer_list<A>& data_) -> Xarray<A, 1>;
+
+template <typename A, int N>
+size_t len(const Xarray<A, N>& op1)
+{
+    return op1.shape[N-1];
+}
 
 }
 
