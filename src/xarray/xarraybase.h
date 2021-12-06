@@ -181,6 +181,8 @@ std::ostream& operator<<(std::ostream& stream, const XarrayBase<A, N, I>& x)
         for (int j = 0; j < x.shape[0]; ++j) {
             if constexpr (std::is_same_v<A, char>) {
                 stream << int(x.raw()[j]);
+            } else if constexpr (std::is_same_v<A, bool>) {
+                stream << ((x.raw()[j]) ? 1 : 0);
             } else {
                 stream << x.raw()[j];
             }
@@ -198,6 +200,7 @@ std::ostream& operator<<(std::ostream& stream, const XarrayBase<A, N, I>& x)
                 } else {
                     stream << x.raw()[i * x.shape[1] + j];
                 }
+
                 if (j != x.shape[1] - 1) {
                     stream << ", ";
                 }
@@ -377,11 +380,16 @@ auto mean(const XarrayBase<A, N, I>& op1, AXIS axis = {})
     return I(op1).mean(axis);
 }
 
+template <typename A, int N = 1, typename I = XarrayBaseImp<A, N>>
+XarrayBase<A, N, I> linspace(A start, A end, int num, bool endpoint = true)
+{
+    return I::linspace(start, end, num, endpoint);
+}
+
 template <typename A, int N, typename I>
 XarrayBase<A, N, I> solve(const XarrayBase<A, N, I>& op1, const XarrayBase<A, N, I>& op2)
 {
     return I(op1).solve(op2);
 }
-
 }
 #endif

@@ -113,6 +113,20 @@ public:
         return TYP<I, M>(shape, d);
     }
 
+    static TYP<I, M> linspace(I start, I end, int num, bool endpoint = true)
+    {
+        DataStorage<I> d = {};
+        Shape<M> shape(num);
+
+        auto step = (end - start) / (num - int(endpoint));
+
+        for (I i = start; i < end + int(endpoint) * step; i += step) {
+            d.append(i);
+        }
+
+        return TYP<I, M>(shape, d);
+    }
+
 public:
     CVXarrayBaseImp(const cv::MatExpr& e, Shape<M> shape_ = {})
         : cv::Mat(e)
@@ -128,7 +142,7 @@ public:
 
     template <typename U>
     requires(XBaseType<U>)
-    CVXarrayBaseImp(const U& x)
+        CVXarrayBaseImp(const U& x)
         : shape(x.shape)
     {
         auto [rows, cols] = get_rc(x.shape);
@@ -226,8 +240,7 @@ public:
     }
 
     template <typename U>
-    requires(arithmetic<U> || XBaseType<U>)
-    auto dot(const U& op2) const
+    requires(arithmetic<U> || XBaseType<U>) auto dot(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
             return *this * op2;
@@ -274,8 +287,7 @@ public:
     }
 
     template <typename U>
-    requires(arithmetic<U> || XBaseType<U>)
-    auto operator<(const U& op2) const
+    requires(arithmetic<U> || XBaseType<U>) auto operator<(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
             return TYP<bool, M>(TT<bool, M>(static_cast<const cv::Mat&>(*this) < op2, shape));
@@ -289,8 +301,7 @@ public:
     }
 
     template <typename U>
-    requires(arithmetic<U> || XBaseType<U>)
-    auto operator==(const U& op2) const
+    requires(arithmetic<U> || XBaseType<U>) auto operator==(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
             return TYP<bool, M>(TT<bool, M>(static_cast<const cv::Mat&>(*this) == op2, shape));
@@ -304,8 +315,7 @@ public:
     }
 
     template <typename U>
-    requires(arithmetic<U> || XBaseType<U>)
-    auto operator*(const U& op2) const
+    requires(arithmetic<U> || XBaseType<U>) auto operator*(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
             return TYP<I, M>(TT<I, M>(static_cast<const cv::Mat&>(*this) * op2, shape));
@@ -319,15 +329,14 @@ public:
             if (shape[1] == op2.shape[0] && op2.shape.size() == 1) {
                 auto op = cv::repeat(static_cast<const cv::Mat&>(IMP<U>(op2)), shape[0], 1);
                 return TYP<I, M>(TT<I, M>(op.mul(*this), shape));
-            }else{
+            } else {
                 throw std::runtime_error("shape error in imp *");
             }
         } else if constexpr (U::shape_size == 2 && M == 1) {
             if (op2.shape[1] == shape[0] && shape.size() == 1) {
                 auto op = cv::repeat(*this, op2.shape[0], 1);
                 return TYP<I, U::shape_size>(TT<I, U::shape_size>(op.mul(IMP<U>(op2)), op2.shape));
-            }
-            else{
+            } else {
                 throw std::runtime_error("shape error in imp *");
             }
         } else {
@@ -351,8 +360,7 @@ public:
     }
 
     template <typename U>
-    requires(arithmetic<U> || XBaseType<U>)
-    auto operator+(const U& op2) const
+    requires(arithmetic<U> || XBaseType<U>) auto operator+(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
             return TYP<I, M>(TT<I, M>(static_cast<const cv::Mat&>(*this) + op2, shape));
@@ -393,8 +401,7 @@ public:
     }
 
     template <typename U>
-    requires(arithmetic<U> || XBaseType<U>)
-    auto operator-(const U& op2) const
+    requires(arithmetic<U> || XBaseType<U>) auto operator-(const U& op2) const
     {
         if constexpr (std::is_arithmetic_v<U>) {
             return TYP<I, M>(TT<I, M>(static_cast<const cv::Mat&>(*this) - op2, shape));
@@ -430,8 +437,7 @@ public:
     }
 
     template <typename U>
-    requires(arithmetic<U> || XBaseType<U>)
-    void operator+=(const U& op2)
+    requires(arithmetic<U> || XBaseType<U>) void operator+=(const U& op2)
     {
         if constexpr (std::is_arithmetic_v<U>) {
             static_cast<cv::Mat&>(*this) += op2;
@@ -445,8 +451,7 @@ public:
     }
 
     template <typename U>
-    requires(arithmetic<U> || XBaseType<U>)
-    void operator-=(const U& op2)
+    requires(arithmetic<U> || XBaseType<U>) void operator-=(const U& op2)
     {
         if constexpr (std::is_arithmetic_v<U>) {
             static_cast<cv::Mat&>(*this) -= op2;

@@ -98,6 +98,14 @@ TEST_CASE("xarray")
     REQUIRE(all(abs(-xm2) == xm2));
 
     auto xchar = Xarray<char, 2>({ { 1, 2 }, { 3, 4 } });
-
     REQUIRE(all(Xarray<int, 2>({ { 1, 2 }, { 3, 4 } }) == xchar.astype<int>()));
+
+    auto xdouble = Xarray<double, 2>({ { 1.1, 2.2 }, { 3.3, 4.4 } });
+    REQUIRE(all(Xarray<int, 2>({ { 1, 2 }, { 3, 4 } }) == xdouble.astype<int>()));
+
+    auto xlinsp = linspace(2.0, 3.0, 5);
+    auto xlinspf = linspace(2.0, 3.0, 5, false);
+
+    REQUIRE(all(Xarray({ 2.0, 2.25, 2.5, 2.75, 3.0 }) == xlinsp));
+    REQUIRE(isclose(Xarray({ 2.0, 2.2, 2.4, 2.6, 2.8 }), xlinspf));
 }
