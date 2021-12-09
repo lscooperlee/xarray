@@ -5,6 +5,7 @@
 #include "xarray/shape.h"
 
 #include <algorithm>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <numeric>
@@ -37,10 +38,23 @@ public:
     {
     }
 
-    template <int... K>
-    DataStorage(const DataStorage<T, K...>& u)
+    DataStorage(const DataStorage<T, N...>& u)
         : idata(u.idata)
+        , sdata(u.sdata)
     {
+    }
+
+    DataStorage<T, N...>& operator=(const DataStorage<T, N...>& u)
+    {
+        if (sdata) {
+            assert((*sdata).size() == u.size());
+            for (size_t i = 0; i < u.size(); ++i) {
+                *(*sdata)[i] = u[i];
+            }
+        }
+        idata = u.idata;
+
+        return *this;
     }
 
     template <typename U>
@@ -63,37 +77,50 @@ public:
 
     T& operator[](size_type idx)
     {
-        return (*idata)[idx];
+        // return (*idata)[idx];
+        return data()[idx];
     }
 
     const T& operator[](size_type idx) const
     {
-        return (*idata)[idx];
+        // return (*idata)[idx];
+        return data()[idx];
     }
 
     auto* data()
     {
+        if (sdata) {
+            idata = std::make_shared<InternalData<T>>((*sdata).size());
+            std::transform(sdata->begin(), sdata->end(), idata->begin(), [](const auto t) {
+                return *t;
+            });
+            //sdata.reset();
+        }
+
         return (*idata).data();
     }
 
     const auto* data() const
     {
+        if (sdata) {
+            idata = std::make_shared<InternalData<T>>((*sdata).size());
+            std::transform(sdata->begin(), sdata->end(), idata->begin(), [](const auto t) {
+                return *t;
+            });
+            //sdata.reset();
+        }
+
         return (*idata).data();
     }
 
     size_type size() const
     {
-        return (*idata).size();
+        if (sdata) {
+            return (*sdata).size();
+        } else {
+            return (*idata).size();
+        }
     }
-
-    // template <typename U>
-    // DataStorage<T> as_type(const DataStorage<U, K...>& storage) const
-    // {
-    //     auto new_idata = std::make_shared<InternalData<U>>(storage.size());
-    //     std::copy(idata->begin(), idata->end(), new_idata->begin());
-
-    //     DataStorage
-    // }
 
     template <int K, int... M>
     DataStorage<T> copy(const Index<M...>& index, Shape<K> shape) const
@@ -109,6 +136,25 @@ public:
         });
 
         return DataStorage<T>(tmp.data(), tmp.size());
+    }
+
+    template <int K, int... M>
+    DataStorage<T> copy_ref(const Index<M...>& index, Shape<K> shape)
+    {
+        auto msk = get_mask(index, shape);
+        auto stride = get_stride(shape);
+
+        std::vector<T*> tmp = {};
+        std::array<int, msk.size()> out = {};
+        loop<msk.size()>(msk, out, [&stride, &tmp, this](const auto& o) {
+            auto idx = std::transform_reduce(stride.begin(), stride.end(), o.begin(), 0);
+            tmp.push_back(&(*this)[idx]);
+        });
+
+        auto d = DataStorage<T>(*this);
+        d.sdata = std::make_shared<InternalData<T*>>(tmp);
+
+        return d;
     }
 
     template <int K, int... M>
@@ -178,7 +224,7 @@ public:
     template <int K, int... M>
     auto get_shape(const Index<M...>& index, Shape<K> shape) const
     {
-        constexpr int m = get_shape_size<M...>() + shape.size() - sizeof...(M);
+        constexpr int m = get_final_shape_size<K, M...>();
 
         std::array<int, m> val = {};
         int val_idx = 0;
@@ -219,9 +265,16 @@ public:
         return Shape<m>(val);
     }
 
-    std::shared_ptr<InternalData<T>> idata = {};
+    mutable std::shared_ptr<InternalData<T>> idata = {};
+    mutable std::shared_ptr<InternalData<T*>> sdata = {};
 
-private:
+    template <int K, int... M>
+    static constexpr int get_final_shape_size()
+    {
+        return get_shape_size<M...>() + K - sizeof...(M);
+    }
+
+// private:
     template <int K, int... M>
     static constexpr int get_shape_size()
     {

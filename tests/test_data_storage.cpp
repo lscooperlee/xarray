@@ -60,4 +60,7 @@ TEST_CASE("data_storage")
     REQUIRE(ds.get_shape(i3, s3) == Shape(3, 3));
 
     // auto mm = ds.copy(i2, s2);
+    auto ds1 = DataStorage<double, 1, 2>(std::vector({ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 1.1, 2.1, 3.1, 4.1, 5.1, 6.1 }));
+
+    // ds = ds1;
 }

@@ -21,11 +21,6 @@ public:
         }
     }
 
-    Xmatrix(XarrayBase<A, 2> base)
-        : XarrayBase<A, 2>(base)
-    {
-    }
-
     template <int... M>
     auto operator[](const Index<M...>& idx) const
     {

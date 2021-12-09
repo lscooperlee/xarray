@@ -108,4 +108,11 @@ TEST_CASE("xarray")
 
     REQUIRE(all(Xarray({ 2.0, 2.25, 2.5, 2.75, 3.0 }) == xlinsp));
     REQUIRE(isclose(Xarray({ 2.0, 2.2, 2.4, 2.6, 2.8 }), xlinspf));
+
+    xdouble[Index(1)] = Xarray<double, 1>({ 8.8, 9.9 });
+    REQUIRE(all(Xarray<double, 2>({ { 1.1, 2.2 }, { 8.8, 9.9 } }) == xdouble));
+
+    std::cout << xdouble[Index(1, 1)] << std::endl;
+    xdouble[Index(1, 1)] = 0.0;
+    std::cout << xdouble[Index(1, 1)] << std::endl;
 }
