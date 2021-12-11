@@ -19,23 +19,6 @@
 
 namespace xa {
 
-template <int K, int... M>
-static constexpr int get_shape_size()
-{
-    if constexpr (sizeof...(M) == 0) {
-        return K == 1 ? 0 : 1;
-    } else {
-        constexpr auto tmp = K == 1 ? 0 : 1;
-        return get_shape_size<M...>() + tmp;
-    }
-}
-
-template <int K, int... M>
-static constexpr int get_final_shape_size()
-{
-    return get_shape_size<M...>() + K - sizeof...(M);
-}
-
 template <typename A, int N>
 using XarrayBaseImp = CVXarrayBaseImp<A, N>;
 
@@ -104,45 +87,33 @@ public:
     }
 
     template <int... M>
-    auto operator[](const Index<M...>& idx) const
+    auto operator[](const Index<M...>& idx) const requires(get_final_shape_size<N, M...>() == 0)
     {
-        auto new_shape = data_storage.get_shape(idx, shape);
-
         auto new_data = data_storage.copy(idx, shape);
-        if constexpr (new_shape.size() == 0) {
-            assert(new_data.size() == 1);
-            return new_data[0];
-        } else {
-            return XarrayBase<A, new_shape.size(), XarrayBaseImp<A, new_shape.size()>>(new_shape, std::move(new_data));
-        }
+        return new_data[0];
     }
-
-    // template <int... M>
-    // auto operator[](const Index<M...>& idx)
-    // {
-    //     auto new_shape = data_storage.get_shape(idx, shape);
-    //     auto new_data = data_storage.copy_ref(idx, shape);
-
-    //     if constexpr (new_shape.size() == 0) {
-    //         assert(new_data.size() == 1);
-    //         return static_cast<A&>(*(*(new_data.sdata))[0]);
-    //     } else {
-    //         return XarrayBase<A, new_shape.size(), XarrayBaseImp<A, new_shape.size()>>(new_shape, std::move(new_data));
-    //     }
-    // }
 
     template <int... M>
     auto& operator[](const Index<M...>& idx) requires(get_final_shape_size<N, M...>() == 0)
     {
-        auto new_shape = data_storage.get_shape(idx, shape);
-        auto new_data = data_storage.copy_ref(idx, shape);
-        return static_cast<A&>(*(*(new_data.sdata))[0]);
+        auto new_data = data_storage.copy(idx, shape);
+        return new_data[0];
     }
+
+    template <int... M>
+    requires(get_final_shape_size<N, M...>() > 0) auto operator[](const Index<M...>& idx) const
+    {
+        auto new_shape = data_storage.get_shape(idx, shape);
+        auto new_data = data_storage.copy(idx, shape);
+
+        return XarrayBase<A, new_shape.size(), XarrayBaseImp<A, new_shape.size()>>(new_shape, std::move(new_data));
+    }
+
     template <int... M>
     requires(get_final_shape_size<N, M...>() > 0) auto operator[](const Index<M...>& idx)
     {
         auto new_shape = data_storage.get_shape(idx, shape);
-        auto new_data = data_storage.copy_ref(idx, shape);
+        auto new_data = data_storage.copy(idx, shape);
 
         return XarrayBase<A, new_shape.size(), XarrayBaseImp<A, new_shape.size()>>(new_shape, std::move(new_data));
     }

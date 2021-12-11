@@ -15,6 +15,23 @@
 
 namespace xa {
 
+template <int K, int... M>
+static constexpr int get_shape_size()
+{
+    if constexpr (sizeof...(M) == 0) {
+        return K == 1 ? 0 : 1;
+    } else {
+        constexpr auto tmp = K == 1 ? 0 : 1;
+        return get_shape_size<M...>() + tmp;
+    }
+}
+
+template <int K, int... M>
+static constexpr int get_final_shape_size()
+{
+    return get_shape_size<M...>() + K - sizeof...(M);
+}
+
 template <typename T, int... N>
 class DataStorage {
 public:
@@ -77,14 +94,16 @@ public:
 
     T& operator[](size_type idx)
     {
-        // return (*idata)[idx];
-        return data()[idx];
+        if (sdata) {
+            return *(*sdata)[idx];
+        } else {
+            return (*idata)[idx];
+        }
     }
 
     const T& operator[](size_type idx) const
     {
-        // return (*idata)[idx];
-        return data()[idx];
+        return (*const_cast<DataStorage<T, N...>*>(this))[idx];
     }
 
     auto* data()
@@ -94,7 +113,7 @@ public:
             std::transform(sdata->begin(), sdata->end(), idata->begin(), [](const auto t) {
                 return *t;
             });
-            //sdata.reset();
+            sdata.reset();
         }
 
         return (*idata).data();
@@ -102,15 +121,7 @@ public:
 
     const auto* data() const
     {
-        if (sdata) {
-            idata = std::make_shared<InternalData<T>>((*sdata).size());
-            std::transform(sdata->begin(), sdata->end(), idata->begin(), [](const auto t) {
-                return *t;
-            });
-            //sdata.reset();
-        }
-
-        return (*idata).data();
+        return const_cast<DataStorage<T, N...>*>(this)->data();
     }
 
     size_type size() const
@@ -139,7 +150,7 @@ public:
     }
 
     template <int K, int... M>
-    DataStorage<T> copy_ref(const Index<M...>& index, Shape<K> shape)
+    DataStorage<T> copy(const Index<M...>& index, Shape<K> shape)
     {
         auto msk = get_mask(index, shape);
         auto stride = get_stride(shape);
@@ -267,24 +278,6 @@ public:
 
     mutable std::shared_ptr<InternalData<T>> idata = {};
     mutable std::shared_ptr<InternalData<T*>> sdata = {};
-
-    template <int K, int... M>
-    static constexpr int get_final_shape_size()
-    {
-        return get_shape_size<M...>() + K - sizeof...(M);
-    }
-
-// private:
-    template <int K, int... M>
-    static constexpr int get_shape_size()
-    {
-        if constexpr (sizeof...(M) == 0) {
-            return K == 1 ? 0 : 1;
-        } else {
-            constexpr auto tmp = K == 1 ? 0 : 1;
-            return get_shape_size<M...>() + tmp;
-        }
-    }
 };
 
 }
