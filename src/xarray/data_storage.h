@@ -21,7 +21,7 @@ static constexpr int get_shape_size()
     if constexpr (sizeof...(M) == 0) {
         return K == 1 ? 0 : 1;
     } else {
-        constexpr auto tmp = K == 1 ? 0 : 1;
+        constexpr auto tmp = (K == 1) ? 0 : 1;
         return get_shape_size<M...>() + tmp;
     }
 }
@@ -136,13 +136,8 @@ public:
     template <int K, int... M>
     DataStorage<T> copy(const Index<M...>& index, Shape<K> shape) const
     {
-        auto msk = get_mask(index, shape);
-        auto stride = get_stride(shape);
-
         std::vector<T> tmp = {};
-        std::array<int, msk.size()> out = {};
-        loop<msk.size()>(msk, out, [&stride, &tmp, this](const auto& o) {
-            auto idx = std::transform_reduce(stride.begin(), stride.end(), o.begin(), 0);
+        for_all_indexed_item(index, shape, [&tmp, this](const auto idx) {
             tmp.push_back((*this)[idx]);
         });
 
@@ -152,86 +147,36 @@ public:
     template <int K, int... M>
     DataStorage<T> copy(const Index<M...>& index, Shape<K> shape)
     {
-        auto msk = get_mask(index, shape);
-        auto stride = get_stride(shape);
+        if (sdata) {
 
-        std::vector<T*> tmp = {};
-        std::array<int, msk.size()> out = {};
-        loop<msk.size()>(msk, out, [&stride, &tmp, this](const auto& o) {
-            auto idx = std::transform_reduce(stride.begin(), stride.end(), o.begin(), 0);
-            tmp.push_back(&(*this)[idx]);
-        });
+            std::vector<T*> tmp = {};
+            for_all_indexed_item(index, shape, [&tmp, this](const auto idx) {
+                tmp.push_back((*sdata)[idx]);
+            });
 
-        auto d = DataStorage<T>(*this);
-        d.sdata = std::make_shared<InternalData<T*>>(tmp);
+            auto d = DataStorage<T>(*this);
+            d.sdata = std::make_shared<InternalData<T*>>(tmp);
 
-        return d;
-    }
+            return d;
 
-    template <int K, int... M>
-    auto get_mask(const Index<M...>& index, Shape<K> shape) const
-    {
-        std::array<std::array<int, 3>, shape.size()> ret = {};
-
-        int count = 0;
-        auto fill = [&ret, &count, &shape](auto&& idx1d) {
-            ret[count][0] = idx1d.start(shape[count]);
-            ret[count][1] = idx1d.stop(shape[count]);
-            ret[count][2] = idx1d.step();
-            count++;
-        };
-        std::apply([&fill](auto&&... args) { (fill(args), ...); }, index.data);
-
-        for (int i = sizeof...(M); i < shape.size(); ++i) {
-            ret[i][0] = 0;
-            ret[i][1] = shape[i];
-            ret[i][2] = 1;
-        }
-
-        return ret;
-    }
-
-    template <int K>
-    auto loop(const auto& mask, auto& out, const auto& func) const
-    {
-        auto is_in_range = [](auto a, auto b, auto c) {
-            if (a <= b) {
-                return c >= a && c < b;
-            } else {
-                return c <= a && c > b;
-            }
-        };
-
-        auto start = mask[K - 1][0];
-        auto stop = mask[K - 1][1];
-        auto step = mask[K - 1][2];
-
-        if constexpr (K == 1) {
-            for (int i = start; is_in_range(start, stop, i); i += step) {
-                out[K - 1] = i;
-                func(out);
-            }
         } else {
-            for (int i = start; is_in_range(start, stop, i); i += step) {
-                out[K - 1] = i;
-                loop<K - 1>(mask, out, func);
-            }
+
+            std::vector<T*> tmp = {};
+            for_all_indexed_item(index, shape, [&tmp, this](const auto idx) {
+                tmp.push_back(&(*this)[idx]);
+            });
+
+            auto d = DataStorage<T>(*this);
+            d.sdata = std::make_shared<InternalData<T*>>(tmp);
+
+            return d;
         }
     }
 
-    template <int K>
-    auto get_stride(Shape<K> shape) const
-    {
-        int total = shape.total();
-        std::array<int, K> stride = {};
-        for (int i = 0; i < shape.size(); ++i) {
-            stride[i] = total / shape[i];
-            total = stride[i];
-        }
+    mutable std::shared_ptr<InternalData<T>> idata = {};
+    mutable std::shared_ptr<InternalData<T*>> sdata = {};
 
-        return stride;
-    }
-
+    // private:
     template <int K, int... M>
     auto get_shape(const Index<M...>& index, Shape<K> shape) const
     {
@@ -273,13 +218,107 @@ public:
             val[val_idx++] = shape[i];
         }
 
-        return Shape<m>(val);
+        return Shape<m>(std::move(val));
     }
 
-    mutable std::shared_ptr<InternalData<T>> idata = {};
-    mutable std::shared_ptr<InternalData<T*>> sdata = {};
-};
+    template <int K>
+    auto get_stride(Shape<K> shape) const
+    {
+        /**
+         * A stride is for getting an actual distance for visiting a flatten array give a binary idx.
+         * eg for a shape (4,3,2), stride would be like:
+         * {6, 2, 1}
+         * that is, for a binary index (3, 2, 1), the final stride is {3*6 + 2*2 + 1*0}
+         */
+        int total = shape.total();
+        std::array<int, K> stride = {};
+        for (int i = 0; i < shape.size(); ++i) {
+            stride[i] = total / shape[i];
+            total = stride[i];
+        }
 
+        return stride;
+    }
+
+    template <int K = 0, int E>
+    auto loop(const auto& mask, std::array<int, E>& bin_idx, const auto& func) const
+    {
+        auto is_in_range = [](auto a, auto b, auto c) {
+            if (a <= b) {
+                return c >= a && c < b;
+            } else {
+                return c <= a && c > b;
+            }
+        };
+
+        auto start = mask[K][0];
+        auto stop = mask[K][1];
+        auto step = mask[K][2];
+
+        /**
+         * Note the order has to be from first indexed to last indexed,
+         * eg: bin_idx has to be 000, 001, 010, 011 for forward order
+         * Then func could simply use push_back for keeping right order after filter.
+        */
+        if constexpr (K == E - 1) {
+            for (int i = start; is_in_range(start, stop, i); i += step) {
+                bin_idx[K] = i;
+                func(bin_idx);
+            }
+        } else {
+            for (int i = start; is_in_range(start, stop, i); i += step) {
+                bin_idx[K] = i;
+                loop<K + 1, E>(mask, bin_idx, func);
+            }
+        }
+    }
+
+    template <int K, int... M>
+    auto get_mask(const Index<M...>& index, Shape<K> shape) const
+    {
+        /**
+         * A mask is an array of {start, end, step} data filtered with index.
+         * It extends the index to its full format.
+         * eg for a shape (4,3,2) and index({0, 4}, {0, 3, 2}), mask would be like:
+         * {
+         *  {0, 4, 1},
+         *  {0, 3, 2},
+         *  {0, 2, 1},
+         * }
+         */
+        std::array<std::array<int, 3>, shape.size()> ret = {};
+
+        int count = 0;
+        auto fill = [&ret, &count, &shape](auto&& idx1d) {
+            ret[count][0] = idx1d.start(shape[count]);
+            ret[count][1] = idx1d.stop(shape[count]);
+            ret[count][2] = idx1d.step();
+            count++;
+        };
+        std::apply([&fill](auto&&... args) { (fill(args), ...); }, index.data);
+
+        for (int i = sizeof...(M); i < shape.size(); ++i) {
+            ret[i][0] = 0;
+            ret[i][1] = shape[i];
+            ret[i][2] = 1;
+        }
+
+        return ret;
+    }
+
+    template <int K, int... M>
+    auto for_all_indexed_item(const Index<M...>& index, Shape<K> shape, const auto& func) const
+    {
+        auto msk = get_mask(index, shape);
+        auto stride = get_stride(shape);
+
+        std::array<int, shape.size()> targetidx = {};
+        loop<0, shape.size()>(msk, targetidx, [&func, &stride](const auto& o /*o in out*/) {
+            auto idx = std::transform_reduce(stride.begin(), stride.end(), o.begin(), 0);
+            func(idx);
+        });
+    }
+};
 }
 
 #endif

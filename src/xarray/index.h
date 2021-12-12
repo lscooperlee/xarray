@@ -85,6 +85,9 @@ public:
     constexpr Index(int a, int b) noexcept
         : data({ { a } }, { { b } }) {};
 
+    constexpr Index(int a, int b, int c) noexcept
+        : data({ { a } }, { { b } }, { { c } }) {};
+
     template <int K, int J>
     constexpr int get() const noexcept requires(K < sizeof...(N))
     {
@@ -99,6 +102,9 @@ Index(int a) -> Index<1>;
 
 template <int... N>
 Index(int a, int b) -> Index<1, 1>;
+
+template <int... N>
+Index(int a, int b, int c) -> Index<1, 1, 1>;
 
 }
 

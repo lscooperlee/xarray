@@ -37,12 +37,11 @@ public:
     {
     }
 
-    //will give warnings for Xarray: -Wambiguous-reversed-operator if no overload
+    // will give warnings for Xarray: -Wambiguous-reversed-operator if no overload
     auto operator==(const Xarray<A, N>& op2) const
     {
         return static_cast<const XarrayBase<A, N>&>(*this) == op2;
     }
-
 };
 
 template <typename A>
@@ -54,7 +53,7 @@ Xarray(const std::initializer_list<A>& data_) -> Xarray<A, 1>;
 template <typename A, int N>
 size_t len(const Xarray<A, N>& op1)
 {
-    return op1.shape[N-1];
+    return op1.shape[N - 1];
 }
 
 }

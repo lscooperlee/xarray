@@ -106,7 +106,8 @@ public:
         auto new_shape = data_storage.get_shape(idx, shape);
         auto new_data = data_storage.copy(idx, shape);
 
-        return XarrayBase<A, new_shape.size(), XarrayBaseImp<A, new_shape.size()>>(new_shape, std::move(new_data));
+        const auto ret = XarrayBase<A, new_shape.size(), XarrayBaseImp<A, new_shape.size()>>(new_shape, std::move(new_data));
+        return ret;
     }
 
     template <int... M>
@@ -189,14 +190,18 @@ public:
         I(*this) -= op2;
         return *this;
     }
+
+    auto operator==(const XarrayBase<A, N, I>& op2) const
+    {
+        return I(*this) == op2;
+    }
 };
 
 template <typename A, int N, typename I>
 std::ostream& operator<<(std::ostream& stream, const XarrayBase<A, N, I>& x)
 {
-    auto sz = x.shape.size();
     stream << "[";
-    if (sz == 1) {
+    if constexpr (N == 1) {
         for (int j = 0; j < x.shape[0]; ++j) {
             if constexpr (std::is_same_v<A, char>) {
                 stream << int(x.raw()[j]);
@@ -210,23 +215,18 @@ std::ostream& operator<<(std::ostream& stream, const XarrayBase<A, N, I>& x)
             }
         }
 
-    } else if (sz == 2) {
+    } else if constexpr (N == 2) {
         for (int i = 0; i < x.shape[0]; ++i) {
-            stream << "[";
-            for (int j = 0; j < x.shape[1]; ++j) {
-                if constexpr (std::is_same_v<A, unsigned char>) {
-                    stream << int(x.raw()[i * x.shape[1] + j]);
-                } else {
-                    stream << x.raw()[i * x.shape[1] + j];
-                }
-
-                if (j != x.shape[1] - 1) {
-                    stream << ", ";
-                }
-            }
-            stream << "]";
+            stream << x[Index(i)];
             if (i != x.shape[0] - 1) {
-                stream << "\n";
+                stream << "\n ";
+            }
+        }
+    } else if (N == 3) {
+        for (int i = 0; i < x.shape[0]; ++i) {
+            stream << x[Index(i)];
+            if (i != x.shape[0] - 1) {
+                stream << "\n\n ";
             }
         }
     } else {
@@ -280,13 +280,13 @@ requires(arithmetic<U>) auto operator/(const U& op2, const XarrayBase<A, N, I>& 
 }
 
 template <typename U, typename A, int N, typename I>
-requires(arithmetic<U> || XBaseType<U>) auto operator==(const XarrayBase<A, N, I>& op1, const U& op2)
+requires(arithmetic<U> || ((!std::is_same_v<U, XarrayBase<A, N, I>>)&&(XBaseType<U>))) auto operator==(const XarrayBase<A, N, I>& op1, const U& op2)
 {
     return I(op1) == op2;
 }
 
 template <typename U, typename A, int N, typename I>
-requires(arithmetic<U> || XBaseType<U>) auto operator==(const U& op2, const XarrayBase<A, N, I>& op1)
+requires(arithmetic<U> || ((!std::is_same_v<U, XarrayBase<A, N, I>>)&&(XBaseType<U>))) auto operator==(const U& op2, const XarrayBase<A, N, I>& op1)
 {
     return I(op1) == op2;
 }

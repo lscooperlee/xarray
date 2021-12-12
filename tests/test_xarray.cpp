@@ -112,7 +112,15 @@ TEST_CASE("xarray")
     xdouble[Index(1)] = Xarray<double, 1>({ 8.8, 9.9 });
     REQUIRE(all(Xarray<double, 2>({ { 1.1, 2.2 }, { 8.8, 9.9 } }) == xdouble));
 
-    std::cout << xdouble[Index(1, 1)] << std::endl;
     xdouble[Index(1, 1)] = 0.0;
-    std::cout << xdouble[Index(1, 1)] << std::endl;
+    REQUIRE(all(Xarray<double, 2>({ { 1.1, 2.2 }, { 8.8, 0 } }) == xdouble));
+
+    auto x3double = Xarray<double, 3>(Shape<3>({ 2, 3, 2 }), { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 });
+    x3double[Index(1, 0)] = Xarray<double, 1>({ 11.1, 22.2 });
+    REQUIRE(all(x3double[Index(1, 0)] == x3double[Index(1)][Index(0)]));
+    REQUIRE(all(Xarray<double, 1>({ 11.1, 22.2 }) == x3double[Index(1)][Index(0)]));
+
+    REQUIRE(x3double[Index(1, 0, 1)] == 22.2);
+    x3double[Index(1, 0, 1)] = 44.4;
+    REQUIRE(x3double[Index(1, 0, 1)] == 44.4);
 }
