@@ -49,9 +49,6 @@ TEST_CASE("xmatrix", "[xtest]")
 
     Xmatrix<double>(Shape(2, 3), 1.0);
 
-    // std::cout << Xrand<Xmatrix<double>>(Shape(2, 3)) << std::endl;
-    // std::cout << Xrand<Xmatrix<double>>(Shape(2, 3)) << std::endl;
-    // std::cout << Xrand<Xmatrix<double>>(Shape(2, 3)) << std::endl;
     REQUIRE(Xnorm(x33) - 7.74597 < 0.0001);
 
     auto m33 = Xvstack(m3.T(), Xmatrix<double>({ { 1.0, 1.0, 1.0 } }));
