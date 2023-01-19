@@ -1,8 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
 
-set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
-set(CMAKE_C_COMPILER "/usr/bin/clang")
-
 # Set the project name to your project name, my project isn't very descriptive
 project(xarray CXX)
 
